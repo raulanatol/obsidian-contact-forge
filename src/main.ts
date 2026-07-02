@@ -6,6 +6,7 @@ import { SyncEngine } from "./sync/SyncEngine";
 import { NoteRepository } from "./sync/NoteRepository";
 import { MacContactsBridge } from "./contacts/MacContactsBridge";
 import { Actions } from "./sync/actions";
+import { registerReportPostProcessor } from "./ui/reportPostProcessor";
 import { setDebug, log } from "./core/log";
 
 export default class ContactForgePlugin extends Plugin {
@@ -22,6 +23,7 @@ export default class ContactForgePlugin extends Plugin {
     this.actions = new Actions(this.app, this.settings);
 
     this.addSettingTab(new ContactForgeSettingTab(this.app, this));
+    registerReportPostProcessor(this);
 
     this.addCommand({
       id: "sync-contacts-to-mac",
@@ -51,7 +53,7 @@ export default class ContactForgePlugin extends Plugin {
       callback: () =>
         this.safeRun(async () => {
           const repo = new NoteRepository(this.app, this.settings);
-          const file = await repo.createFromTemplate();
+          const { file } = await repo.createFromTemplate();
           await this.app.workspace.getLeaf(true).openFile(file);
         }),
     });

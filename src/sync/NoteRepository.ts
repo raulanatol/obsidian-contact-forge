@@ -65,7 +65,9 @@ export class NoteRepository {
     });
   }
 
-  async createFromTemplate(managed?: Partial<ManagedFields>): Promise<TFile> {
+  async createFromTemplate(
+    managed?: Partial<ManagedFields>
+  ): Promise<{ file: TFile; uid: string }> {
     const uid = newUuid();
     const managedFields: ManagedFields = {
       firstName: managed?.firstName ?? "",
@@ -99,7 +101,8 @@ export class NoteRepository {
       "New Contact";
     const path = await this.uniquePath(folder, baseName);
     const content = `---\n${stringifyYaml(fm)}---\n\n`;
-    return this.app.vault.create(path, content);
+    const file = await this.app.vault.create(path, content);
+    return { file, uid };
   }
 
   private async uniquePath(folder: string, baseName: string): Promise<string> {
