@@ -11,12 +11,20 @@ function run(argv) {
     person = found.length ? found[0] : null;
   }
   if (!person) {
-    person = Contacts.Person({ firstName: input.managed.firstName });
-    Contacts.add(person);
+    // Set name/org in the constructor: properties assigned after push+save on a
+    // freshly created person are silently dropped (stale specifier post-commit).
+    person = Contacts.Person({
+      firstName: input.managed.firstName,
+      lastName: input.managed.lastName,
+      organization: input.managed.org
+    });
+    Contacts.people.push(person);
+    Contacts.save();
+  } else {
+    person.firstName = input.managed.firstName;
+    person.lastName = input.managed.lastName;
+    person.organization = input.managed.org;
   }
-  person.firstName = input.managed.firstName;
-  person.lastName = input.managed.lastName;
-  person.organization = input.managed.org;
 
   replaceEmails(Contacts, person, input.managed.emails);
   replacePhones(Contacts, person, input.managed.phones);
@@ -52,8 +60,11 @@ function replacePhones(Contacts, person, list) {
   });
 }
 function ensureInGroup(Contacts, person, groupName) {
+  // Pushing an already-committed person into groups[0].people re-triggers a
+  // "make new" event and blanks the record. Use the "add ... to ..." command
+  // (JXA idiom: app.add(obj, {to: dest})) to add an existing person to a group.
   var groups = Contacts.groups.whose({ name: groupName });
   if (groups.length) {
-    groups[0].people.push(person);
+    Contacts.add(person, { to: groups[0] });
   }
 }

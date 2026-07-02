@@ -73,11 +73,11 @@ export default class ContactForgePlugin extends Plugin {
         })
     });
 
-    // Report action links: obsidian://contact-forge?action=...&uid=...&cardId=...
+    // Report action links: obsidian://contact-forge?op=...&uid=...&cardId=...
     this.registerObsidianProtocolHandler('contact-forge', async params => {
       await this.safeRun(async () => {
-        const { action, uid, cardId } = params as Record<string, string>;
-        switch (action) {
+        const { op, uid, cardId } = params as Record<string, string>;
+        switch (op) {
           case 'adopt':
             return this.actions.adopt(cardId);
           case 'mark-delete':
@@ -89,7 +89,7 @@ export default class ContactForgePlugin extends Plugin {
           case 'confirm':
             return this.actions.confirm(uid, cardId);
           default:
-            log.notice(`Unknown action: ${action}`);
+            log.notice(`Unknown action: ${op}`);
         }
       });
     });

@@ -18,11 +18,14 @@ function cardLabel(card: MacCard): string {
   return email ? `${fullName(card)} (${email})` : fullName(card);
 }
 
-function actionLink(label: string, action: string, params: Record<string, string>): string {
+function actionLink(label: string, op: string, params: Record<string, string>): string {
+  // "action" is a reserved key on Obsidian's ObsidianProtocolData (it holds the
+  // registered protocol name, i.e. "contact-forge") — using it here for our own
+  // operation name would collide and get overwritten. Use "op" instead.
   const qs = Object.entries(params)
     .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
     .join('&');
-  return `[${label}](obsidian://contact-forge?action=${action}&${qs})`;
+  return `[${label}](obsidian://contact-forge?op=${op}&${qs})`;
 }
 
 /**

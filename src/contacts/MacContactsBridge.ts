@@ -1,3 +1,10 @@
+import { execFile } from 'child_process';
+import { randomUUID } from 'crypto';
+import fs from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { promisify } from 'util';
+
 import type { LabeledValue, MacCard, ManagedFields } from '../core/types';
 
 // JXA sources are bundled as text (esbuild loader ".js" -> "text").
@@ -5,6 +12,8 @@ import dumpGroupSrc from './jxa/dumpGroup.js';
 import stampMarkerSrc from './jxa/stampMarker.js';
 import upsertCardSrc from './jxa/upsertCard.js';
 import { classifyOsascriptError } from './permissions';
+
+const execFileAsync = promisify(execFile);
 
 interface ExecFileError extends Error {
   stdout?: string;
@@ -20,14 +29,6 @@ interface ExecFileError extends Error {
  */
 export class MacContactsBridge {
   private async run(script: string, payload: unknown): Promise<unknown> {
-    const { execFile } = await import('child_process');
-    const { promisify } = await import('util');
-    const fs = await import('fs/promises');
-    const os = await import('os');
-    const path = await import('path');
-    const { randomUUID } = await import('crypto');
-
-    const execFileAsync = promisify(execFile);
     const tmpFile = path.join(os.tmpdir(), `contact-forge-${randomUUID()}.js`);
     await fs.writeFile(tmpFile, script, 'utf8');
 
