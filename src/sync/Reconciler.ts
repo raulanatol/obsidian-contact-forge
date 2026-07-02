@@ -11,7 +11,7 @@ import type {
   MacCard,
   ManagedFields,
   SyncPlan,
-} from "./types";
+} from "../core/types";
 import { hashManaged } from "../core/hash";
 
 function normName(s: string): string {
