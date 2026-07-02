@@ -6,25 +6,52 @@ import dumpGroupSrc from "./jxa/dumpGroup.js";
 import upsertCardSrc from "./jxa/upsertCard.js";
 import stampMarkerSrc from "./jxa/stampMarker.js";
 
+interface ExecFileError extends Error {
+  stdout?: string;
+  stderr?: string;
+}
+
 /**
  * Bridge to macOS Contacts via `osascript -l JavaScript`.
  *
- * IMPLEMENTATION NOTES for Claude Code:
- * - Use child_process.execFile (promisified). Write the JXA source to a temp file
- *   and pass the JSON payload as a single argv argument; the JXA reads it via
- *   ObjC $.NSProcessInfo.processInfo.arguments. Return JSON on stdout.
- * - NEVER string-concatenate user data into the script body. Data goes only through
- *   the JSON argv/stdin channel.
- * - On non-zero exit or non-JSON stdout, throw an Error whose message is derived from
- *   classifyOsascriptError(stderr) so the UI can show TCC guidance.
- * - Import child_process/os/fs LAZILY inside methods (desktop-only).
+ * Data is never string-concatenated into the script body: the JXA source is
+ * written verbatim to a temp file and the payload travels as a single JSON
+ * argv argument, read back inside the script via `argv[0]`.
  */
 export class MacContactsBridge {
-  private async run(_script: string, _payload: unknown): Promise<unknown> {
-    // const { execFile } = await import("child_process");
-    // ...write _script to tmp, execFile("osascript", ["-l","JavaScript", tmp, JSON.stringify(_payload)])
-    void classifyOsascriptError;
-    throw new Error("TODO: run osascript and parse JSON result");
+  private async run(script: string, payload: unknown): Promise<unknown> {
+    const { execFile } = await import("child_process");
+    const { promisify } = await import("util");
+    const fs = await import("fs/promises");
+    const os = await import("os");
+    const path = await import("path");
+    const { randomUUID } = await import("crypto");
+
+    const execFileAsync = promisify(execFile);
+    const tmpFile = path.join(os.tmpdir(), `contact-forge-${randomUUID()}.js`);
+    await fs.writeFile(tmpFile, script, "utf8");
+
+    try {
+      const { stdout } = await execFileAsync("osascript", [
+        "-l",
+        "JavaScript",
+        tmpFile,
+        JSON.stringify(payload),
+      ]);
+      try {
+        return JSON.parse(stdout);
+      } catch {
+        throw new Error(`Unexpected osascript output: ${stdout.trim()}`);
+      }
+    } catch (e) {
+      const err = e as ExecFileError;
+      if (err.stderr !== undefined) {
+        throw new Error(classifyOsascriptError(err.stderr));
+      }
+      throw err;
+    } finally {
+      await fs.unlink(tmpFile).catch(() => {});
+    }
   }
 
   async dumpGroup(groupName: string): Promise<MacCard[]> {
