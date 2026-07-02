@@ -13,6 +13,7 @@ import type {
   SyncPlan,
 } from "../core/types";
 import { hashManaged } from "../core/hash";
+import { stripMarkerBlock } from "../core/uid";
 
 function normName(s: string): string {
   return s.trim().toLowerCase();
@@ -28,15 +29,8 @@ function cardManaged(card: MacCard): ManagedFields {
     // The card note carries our marker block; the actual contactNote content is
     // everything above the marker. The bridge is responsible for splitting; here
     // we compare only what we control, so we treat the stored note as-is minus marker.
-    contactNote: stripMarker(card.note),
+    contactNote: stripMarkerBlock(card.note),
   };
-}
-
-function stripMarker(note: string): string {
-  return note
-    .replace(/^obsidian:\/\/search\?[^\n]*$/m, "")
-    .replace(/^cf-uid:\s*[0-9a-fA-F-]{8,}\s*$/m, "")
-    .trim();
 }
 
 function emailsOf(m: ManagedFields): Set<string> {

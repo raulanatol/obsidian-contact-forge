@@ -37,3 +37,11 @@ export function parseMarker(note: string): string | null {
 export function macNoteBlock(vaultName: string, uid: string): string {
   return `${deepLink(vaultName, uid)}\n${markerLine(uid)}`;
 }
+
+/** Strip the deep-link + cf-uid marker lines back out of a Mac card's note field. */
+export function stripMarkerBlock(note: string): string {
+  return note
+    .replace(/^obsidian:\/\/search\?[^\n]*$/m, "")
+    .replace(/^cf-uid:\s*[0-9a-fA-F-]{8,}\s*$/m, "")
+    .trim();
+}
