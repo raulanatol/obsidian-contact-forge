@@ -1,5 +1,6 @@
 import { App, TFile, normalizePath, stringifyYaml } from 'obsidian';
 
+import { contactFileSlug } from '../core/slugify';
 import type { ContactForgeSettings, ContactNote, LabeledValue, ManagedFields } from '../core/types';
 import { newUuid } from '../core/uid';
 
@@ -98,8 +99,7 @@ export class NoteRepository {
       await this.app.vault.createFolder(folder);
     }
 
-    const baseName =
-      [managedFields.firstName, managedFields.lastName].filter(Boolean).join(' ').trim() || 'New Contact';
+    const baseName = contactFileSlug(managedFields.firstName, managedFields.lastName) || 'new-contact';
     const path = await this.uniquePath(folder, baseName);
     const content = `---\n${stringifyYaml(fm)}---\n\n`;
     const file = await this.app.vault.create(path, content);
@@ -110,7 +110,7 @@ export class NoteRepository {
     let candidate = normalizePath(folder ? `${folder}/${baseName}.md` : `${baseName}.md`);
     let i = 2;
     while (this.app.vault.getAbstractFileByPath(candidate)) {
-      candidate = normalizePath(folder ? `${folder}/${baseName} ${i}.md` : `${baseName} ${i}.md`);
+      candidate = normalizePath(folder ? `${folder}/${baseName}-${i}.md` : `${baseName}-${i}.md`);
       i++;
     }
     return candidate;
