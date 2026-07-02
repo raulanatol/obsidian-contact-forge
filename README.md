@@ -16,6 +16,20 @@ Contacts group. iOS benefits automatically via iCloud.
 This is a deliberate inversion of [`raulanatol/obsidian-mac-sync-contacts`](https://github.com/raulanatol/obsidian-mac-sync-contacts)
 and a plugin-native take on the ideas proven by [`czottmann/obsidian-people`](https://github.com/czottmann/obsidian-people).
 
+## Screenshots
+
+**Settings** — choose the contacts folder, the source Contacts group, and which fields are managed.
+![Contact Forge settings](docs/images/settings.png)
+
+**Sync report** — every run's desync alerts, one row per actionable card, with click-through actions.
+![Sync report](docs/images/sync-report.png)
+
+**Confirm before writing** — a summary modal before anything touches Contacts.app.
+![Confirm modal](docs/images/confirm-modal.png)
+
+**The contact note** — frontmatter holds the managed fields; the body stays freeform.
+![Contact note frontmatter](docs/images/contact-note.png)
+
 ## How it works
 
 - One markdown note per contact under a configurable folder (default `Contacts/`).
