@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "Obsidian is the source of truth for your contacts; sync a chosen subset one-way to macOS Contacts, with desync alerts.",
-  "author": "Raúl Antón Lora",
+  "author": "Raúl Anatol",
   "authorUrl": "https://github.com/raulanatol",
   "isDesktopOnly": true
 }

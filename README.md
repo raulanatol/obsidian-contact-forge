@@ -78,4 +78,4 @@ full architecture and the phased build plan.
 
 ## License
 
-MIT © Raúl Antón Lora
+MIT © Raúl Anatol

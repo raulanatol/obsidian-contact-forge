@@ -11,7 +11,7 @@
     "sync"
   ],
   "license": "MIT",
-  "author": "Raúl Antón Lora",
+  "author": "Raúl Anatol",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",

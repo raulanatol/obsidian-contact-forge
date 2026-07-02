@@ -8,7 +8,7 @@
    {
      "id": "contact-forge",
      "name": "Contact Forge",
-     "author": "Raúl Antón Lora",
+     "author": "Raúl Anatol",
      "description": "Obsidian as source of truth for contacts; one-way sync to macOS Contacts.",
      "repo": "raulanatol/obsidian-contact-forge"
    }
