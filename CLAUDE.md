@@ -99,13 +99,12 @@ Mac card itself — "mark for deletion" only appends to a checklist for the user
 
 ### Current implementation state
 
-Pure modules are complete and unit-tested: `core/hash.ts`, `core/uid.ts`,
-`sync/Reconciler.ts`, `core/types.ts`. Everything touching Obsidian/Node/JXA I/O is a
-stub with a `TODO` throw and an `IMPLEMENTATION NOTES for Claude Code` comment block
-describing exactly what to build: `sync/SyncEngine.ts`, `contacts/MacContactsBridge.ts`,
+All modules described above are implemented and either unit-tested (`core/hash.ts`,
+`core/uid.ts`, `sync/Reconciler.ts`, `core/types.ts`) or exercised via the manual JXA
+checklist in `docs/TESTING.md` (`sync/SyncEngine.ts`, `contacts/MacContactsBridge.ts`,
 `sync/NoteRepository.ts`, `sync/ReportWriter.ts`, `sync/actions.ts`,
-`settings/SettingsTab.ts`, `ui/ConfirmModal.ts`, `ui/reportPostProcessor.ts`. Check a
-file's own header comment and `docs/BUILD_PLAN.md` §9 before implementing it.
+`settings/SettingsTab.ts`, `ui/ConfirmModal.ts`, `ui/reportPostProcessor.ts`). See
+`docs/BUILD_PLAN.md` §9 for the file-by-file map before making non-trivial changes.
 
 ## Testing notes
 
