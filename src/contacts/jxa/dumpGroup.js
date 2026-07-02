@@ -6,7 +6,9 @@ function run(argv) {
   var input = JSON.parse(argv[0] || '{}');
   var Contacts = Application('Contacts');
   var groups = Contacts.groups.whose({ name: input.group });
-  if (groups.length === 0) { throw new Error('group-not-found:' + input.group); }
+  if (groups.length === 0) {
+    throw new Error('group-not-found:' + input.group);
+  }
   var people = groups[0].people();
   var out = [];
   for (var i = 0; i < people.length; i++) {
@@ -34,5 +36,7 @@ function run(argv) {
 }
 function labelName(l) {
   if (!l) return 'other';
-  return String(l).replace(/^_\$!<|>!\$_$/g, '').toLowerCase();
+  return String(l)
+    .replace(/^_\$!<|>!\$_$/g, '')
+    .toLowerCase();
 }

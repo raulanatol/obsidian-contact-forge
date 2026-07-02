@@ -7,12 +7,12 @@ export interface LabeledValue {
 }
 
 export type SyncStatus =
-  | "in-sync"
-  | "dirty" // note changed in Obsidian, needs push
-  | "orphan-mac" // card in source group with no matching note
-  | "edited-in-mac" // card diverged from last-written managed fields
-  | "suggestion" // weak heuristic match, needs user confirmation
-  | "error";
+  | 'in-sync'
+  | 'dirty' // note changed in Obsidian, needs push
+  | 'orphan-mac' // card in source group with no matching note
+  | 'edited-in-mac' // card diverged from last-written managed fields
+  | 'suggestion' // weak heuristic match, needs user confirmation
+  | 'error';
 
 /** The managed subset of fields that Obsidian owns and pushes to Mac. */
 export interface ManagedFields {
@@ -48,12 +48,12 @@ export interface MacCard {
 }
 
 export type Bucket =
-  | { kind: "in-sync"; note: ContactNote; card: MacCard }
-  | { kind: "dirty"; note: ContactNote; card: MacCard | null }
-  | { kind: "orphan-mac"; card: MacCard }
-  | { kind: "edited-in-mac"; note: ContactNote; card: MacCard }
-  | { kind: "suggestion"; note: ContactNote; card: MacCard }
-  | { kind: "error"; note?: ContactNote; card?: MacCard; message: string };
+  | { kind: 'in-sync'; note: ContactNote; card: MacCard }
+  | { kind: 'dirty'; note: ContactNote; card: MacCard | null }
+  | { kind: 'orphan-mac'; card: MacCard }
+  | { kind: 'edited-in-mac'; note: ContactNote; card: MacCard }
+  | { kind: 'suggestion'; note: ContactNote; card: MacCard }
+  | { kind: 'error'; note?: ContactNote; card?: MacCard; message: string };
 
 export interface SyncPlan {
   buckets: Bucket[];
@@ -80,18 +80,18 @@ export interface ContactForgeSettings {
 }
 
 export const DEFAULT_SETTINGS: ContactForgeSettings = {
-  contactsFolder: "Contacts",
-  sourceGroupName: "Obsidian",
-  reportPath: "Contact Forge Sync Report.md",
+  contactsFolder: 'Contacts',
+  sourceGroupName: 'Obsidian',
+  reportPath: 'Contact Forge Sync Report.md',
   deepLinkVaultName: null,
   managedFields: {
     name: true,
     org: true,
     emails: true,
     phones: true,
-    contactNote: true,
+    contactNote: true
   },
   dryRun: false,
   confirmBeforeWrite: true,
-  debug: false,
+  debug: false
 };

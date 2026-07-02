@@ -5,15 +5,9 @@
 // configured source group, it matches them, buckets each into a SyncStatus, and
 // produces a SyncPlan describing intended writes. It NEVER performs writes.
 
-import type {
-  Bucket,
-  ContactNote,
-  MacCard,
-  ManagedFields,
-  SyncPlan,
-} from "../core/types";
-import { hashManaged } from "../core/hash";
-import { stripMarkerBlock } from "../core/uid";
+import { hashManaged } from '../core/hash';
+import type { Bucket, ContactNote, MacCard, ManagedFields, SyncPlan } from '../core/types';
+import { stripMarkerBlock } from '../core/uid';
 
 function normName(s: string): string {
   return s.trim().toLowerCase();
@@ -29,12 +23,12 @@ function cardManaged(card: MacCard): ManagedFields {
     // The card note carries our marker block; the actual contactNote content is
     // everything above the marker. The bridge is responsible for splitting; here
     // we compare only what we control, so we treat the stored note as-is minus marker.
-    contactNote: stripMarkerBlock(card.note),
+    contactNote: stripMarkerBlock(card.note)
   };
 }
 
 function emailsOf(m: ManagedFields): Set<string> {
-  return new Set(m.emails.map((e) => e.value.trim().toLowerCase()));
+  return new Set(m.emails.map(e => e.value.trim().toLowerCase()));
 }
 
 function shareEmail(a: ManagedFields, b: ManagedFields): boolean {
@@ -75,16 +69,15 @@ export function reconcile(input: ReconcileInput): SyncPlan {
     // 3) weak heuristic: name + shared email (suggestion only)
     if (!card) {
       const cand = cards.find(
-        (c) =>
+        c =>
           !matchedCardIds.has(c.id) &&
           c.cfUid == null &&
-          normName(`${c.firstName} ${c.lastName}`) ===
-            normName(`${note.managed.firstName} ${note.managed.lastName}`) &&
+          normName(`${c.firstName} ${c.lastName}`) === normName(`${note.managed.firstName} ${note.managed.lastName}`) &&
           shareEmail(cardManaged(c), note.managed)
       );
       if (cand) {
         matchedCardIds.add(cand.id);
-        buckets.push({ kind: "suggestion", note, card: cand });
+        buckets.push({ kind: 'suggestion', note, card: cand });
         continue;
       }
     }
@@ -92,7 +85,7 @@ export function reconcile(input: ReconcileInput): SyncPlan {
     if (!card) {
       // note only -> create
       toCreate.push(note);
-      buckets.push({ kind: "dirty", note, card: null });
+      buckets.push({ kind: 'dirty', note, card: null });
       continue;
     }
 
@@ -104,21 +97,21 @@ export function reconcile(input: ReconcileInput): SyncPlan {
     const cardMatchesLastWrite = note.managedHash === cardHash;
 
     if (!noteChanged && cardMatchesLastWrite) {
-      buckets.push({ kind: "in-sync", note, card });
+      buckets.push({ kind: 'in-sync', note, card });
     } else if (noteChanged) {
       // Obsidian is source of truth: push regardless of card state.
       toUpdate.push({ note, card });
-      buckets.push({ kind: "dirty", note, card });
+      buckets.push({ kind: 'dirty', note, card });
     } else {
       // note unchanged but card diverged -> edited in Mac
-      buckets.push({ kind: "edited-in-mac", note, card });
+      buckets.push({ kind: 'edited-in-mac', note, card });
     }
   }
 
   // any card in the source group not matched to a note -> orphan
   for (const c of cards) {
     if (!matchedCardIds.has(c.id)) {
-      buckets.push({ kind: "orphan-mac", card: c });
+      buckets.push({ kind: 'orphan-mac', card: c });
     }
   }
 

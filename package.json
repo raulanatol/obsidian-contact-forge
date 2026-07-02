@@ -2,33 +2,42 @@
   "name": "obsidian-contact-forge",
   "version": "0.1.0",
   "description": "Obsidian as source of truth for contacts, one-way sync to macOS Contacts.",
+  "keywords": [
+    "contacts",
+    "crm",
+    "macos",
+    "obsidian",
+    "obsidian-plugin",
+    "sync"
+  ],
+  "license": "MIT",
+  "author": "Raúl Antón Lora",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "oxlint src/",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
-  "keywords": [
-    "obsidian",
-    "obsidian-plugin",
-    "contacts",
-    "macos",
-    "crm",
-    "sync"
-  ],
-  "author": "Raúl Antón Lora",
-  "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.19.43",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.0",
     "builtin-modules": "^3.3.0",
     "esbuild": "^0.20.0",
     "obsidian": "latest",
+    "oxfmt": "0.57.0",
+    "oxlint": "1.72.0",
     "tslib": "^2.6.2",
     "typescript": "^5.9.3",
     "vitest": "^1.6.1"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
