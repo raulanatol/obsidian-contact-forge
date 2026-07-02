@@ -3,7 +3,7 @@ name: Release Obsidian plugin
 on:
   push:
     tags:
-      - "*"
+      - '*'
 
 permissions:
   contents: write
@@ -14,14 +14,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
+          cache: 'pnpm'
 
-      - name: Install & build
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint & format check
         run: |
-          npm ci
-          npm run build
+          pnpm run lint
+          pnpm run format:check
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm run build
 
       - name: Create release
         env:

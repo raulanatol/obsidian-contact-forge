@@ -1,13 +1,14 @@
-import { App, TFile, normalizePath, stringifyYaml } from "obsidian";
-import type { ContactForgeSettings, ContactNote, LabeledValue, ManagedFields } from "../core/types";
-import { newUuid } from "../core/uid";
+import { App, TFile, normalizePath, stringifyYaml } from 'obsidian';
+
+import type { ContactForgeSettings, ContactNote, LabeledValue, ManagedFields } from '../core/types';
+import { newUuid } from '../core/uid';
 
 function normalizeLabeledList(list: unknown): LabeledValue[] {
   if (!Array.isArray(list)) return [];
-  return list.map((item) =>
-    typeof item === "string"
-      ? { label: "other", value: item }
-      : { label: String(item?.label ?? "other"), value: String(item?.value ?? "") }
+  return list.map(item =>
+    typeof item === 'string'
+      ? { label: 'other', value: item }
+      : { label: String(item?.label ?? 'other'), value: String(item?.value ?? '') }
   );
 }
 
@@ -17,12 +18,15 @@ function normalizeLabeledList(list: unknown): LabeledValue[] {
  * frontmatter writes so we never clobber the note body.
  */
 export class NoteRepository {
-  constructor(private app: App, private settings: ContactForgeSettings) {}
+  constructor(
+    private app: App,
+    private settings: ContactForgeSettings
+  ) {}
 
   async listContactFiles(): Promise<TFile[]> {
     const folder = normalizePath(this.settings.contactsFolder);
-    const prefix = folder ? `${folder}/` : "";
-    return this.app.vault.getMarkdownFiles().filter((f) => f.path.startsWith(prefix));
+    const prefix = folder ? `${folder}/` : '';
+    return this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(prefix));
   }
 
   async parse(file: TFile): Promise<ContactNote> {
@@ -35,16 +39,16 @@ export class NoteRepository {
       obsidianUid: String(fm.obsidian_uid),
       macContactId: fm.mac_contact_id ?? null,
       managed: {
-        firstName: fm.first_name ?? "",
-        lastName: fm.last_name ?? "",
-        org: fm.org ?? "",
+        firstName: fm.first_name ?? '',
+        lastName: fm.last_name ?? '',
+        org: fm.org ?? '',
         emails: normalizeLabeledList(fm.emails),
         phones: normalizeLabeledList(fm.phones),
-        contactNote: fm.contact_note ?? "",
+        contactNote: fm.contact_note ?? ''
       },
       managedHash: fm.cf_managed_hash ?? null,
       syncedAt: fm.cf_synced_at ?? null,
-      syncEnabled: fm.cf_sync !== false,
+      syncEnabled: fm.cf_sync !== false
     };
   }
 
@@ -57,7 +61,7 @@ export class NoteRepository {
       status?: string;
     }
   ): Promise<void> {
-    await this.app.fileManager.processFrontMatter(file, (fm) => {
+    await this.app.fileManager.processFrontMatter(file, fm => {
       if (state.macContactId !== undefined) fm.mac_contact_id = state.macContactId;
       if (state.managedHash !== undefined) fm.cf_managed_hash = state.managedHash;
       if (state.syncedAt !== undefined) fm.cf_synced_at = state.syncedAt;
@@ -65,17 +69,15 @@ export class NoteRepository {
     });
   }
 
-  async createFromTemplate(
-    managed?: Partial<ManagedFields>
-  ): Promise<{ file: TFile; uid: string }> {
+  async createFromTemplate(managed?: Partial<ManagedFields>): Promise<{ file: TFile; uid: string }> {
     const uid = newUuid();
     const managedFields: ManagedFields = {
-      firstName: managed?.firstName ?? "",
-      lastName: managed?.lastName ?? "",
-      org: managed?.org ?? "",
+      firstName: managed?.firstName ?? '',
+      lastName: managed?.lastName ?? '',
+      org: managed?.org ?? '',
       emails: managed?.emails ?? [],
       phones: managed?.phones ?? [],
-      contactNote: managed?.contactNote ?? "",
+      contactNote: managed?.contactNote ?? ''
     };
     const fm = {
       obsidian_uid: uid,
@@ -88,7 +90,7 @@ export class NoteRepository {
       contact_note: managedFields.contactNote,
       cf_managed_hash: null,
       cf_synced_at: null,
-      cf_sync_status: "dirty",
+      cf_sync_status: 'dirty'
     };
 
     const folder = normalizePath(this.settings.contactsFolder);
@@ -97,8 +99,7 @@ export class NoteRepository {
     }
 
     const baseName =
-      [managedFields.firstName, managedFields.lastName].filter(Boolean).join(" ").trim() ||
-      "New Contact";
+      [managedFields.firstName, managedFields.lastName].filter(Boolean).join(' ').trim() || 'New Contact';
     const path = await this.uniquePath(folder, baseName);
     const content = `---\n${stringifyYaml(fm)}---\n\n`;
     const file = await this.app.vault.create(path, content);

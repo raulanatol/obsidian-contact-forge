@@ -30,18 +30,30 @@ function run(argv) {
   return JSON.stringify({ id: person.id() });
 }
 function replaceEmails(Contacts, person, list) {
-  person.emails().slice().forEach(function (e) { Contacts.delete(e); });
+  person
+    .emails()
+    .slice()
+    .forEach(function (e) {
+      Contacts.delete(e);
+    });
   (list || []).forEach(function (e) {
     person.emails.push(Contacts.Email({ label: e.label, value: e.value }));
   });
 }
 function replacePhones(Contacts, person, list) {
-  person.phones().slice().forEach(function (p) { Contacts.delete(p); });
+  person
+    .phones()
+    .slice()
+    .forEach(function (p) {
+      Contacts.delete(p);
+    });
   (list || []).forEach(function (p) {
     person.phones.push(Contacts.Phone({ label: p.label, value: p.value }));
   });
 }
 function ensureInGroup(Contacts, person, groupName) {
   var groups = Contacts.groups.whose({ name: groupName });
-  if (groups.length) { groups[0].people.push(person); }
+  if (groups.length) {
+    groups[0].people.push(person);
+  }
 }

@@ -17,19 +17,23 @@ this document only summarizes what's needed to navigate the code day to day.
 ## Commands
 
 ```bash
-npm run dev     # esbuild watch build
-npm run build   # tsc -noEmit typecheck, then production esbuild bundle -> main.js
-npm test        # vitest run (pure unit tests: hash + reconciler)
-npm run test:watch
+pnpm run dev            # esbuild watch build
+pnpm run build          # tsc -noEmit typecheck, then production esbuild bundle -> main.js
+pnpm test               # vitest run (pure unit tests: hash + reconciler)
+pnpm run test:watch
+pnpm run lint           # oxlint over src/
+pnpm run format         # oxfmt --write, whole repo
+pnpm run format:check   # oxfmt --check, whole repo (no writes)
 ```
 
-Run a single test file: `npx vitest run tests/reconciler.test.ts`.
+Run a single test file: `pnpm exec vitest run tests/reconciler.test.ts`.
 
-There is no lint script configured despite the eslint devDependencies being present.
+Linting/formatting is oxlint + oxfmt (config in `.oxlintrc.json` / `.oxfmtrc.json`), not eslint/prettier.
 
 ## Architecture
 
 ### Data flow
+
 One markdown note per contact under a configurable folder (default `Contacts/`).
 Frontmatter holds the **managed** fields (name, org, emails, phones, `contact_note`) plus
 sync bookkeeping (`obsidian_uid`, `mac_contact_id`, `cf_managed_hash`, `cf_synced_at`,
@@ -38,8 +42,10 @@ push-only: Obsidian always wins, and edits made directly in Contacts get overwri
 (after being surfaced in a report, never silently).
 
 ### The reconciliation engine (core logic — `src/sync/Reconciler.ts`)
+
 Pure, dependency-free module (no Obsidian/Node imports) that takes `{ notes, cards }`
 and produces a `SyncPlan`. It never performs I/O or writes. Matching precedence, in order:
+
 1. `cf-uid` marker stamped on the Mac card === note's `obsidian_uid` → strong match.
 2. Cached `mac_contact_id` on the note === card id → strong match (heals the marker).
 3. Heuristic (normalized name + shared email) → **suggestion only**, never auto-applied.
@@ -51,6 +57,7 @@ running sync twice with no edits must produce zero writes — the reconciler tes
 (`tests/reconciler.test.ts`) is where that invariant is enforced.
 
 ### Hashing (`src/core/hash.ts`)
+
 `canonicalize()` normalizes managed fields (trim, lowercase, sort emails/phones by
 value) into an order-stable shape, then `fnv1a()` hashes the JSON of that shape. Both
 note-side and card-side managed fields go through the same canonicalization before
@@ -58,9 +65,11 @@ comparison, so drift detection isn't fooled by ordering or casing differences. K
 deterministic across runs/machines — the whole sync model depends on it.
 
 ### macOS Contacts bridge (`src/contacts/MacContactsBridge.ts` + `src/contacts/jxa/*.js`)
+
 JXA scripts (`dumpGroup.js`, `upsertCard.js`, `stampMarker.js`) are bundled as raw text
 via esbuild's `.js -> text` loader (see `esbuild.config.mjs`) and invoked through
 `child_process.execFile('osascript', ...)`. Rules that matter here:
+
 - Never string-concatenate user data into a JXA script body — payloads travel only as a
   JSON argv/stdin argument, read back inside the script via `$.NSProcessInfo`.
 - `upsertCard` must read-modify-write: photo, groups, and any unmanaged field must
@@ -73,6 +82,7 @@ via esbuild's `.js -> text` loader (see `esbuild.config.mjs`) and invoked throug
   Security → Automation → Obsidian → Contacts.
 
 ### Orchestration (`src/sync/SyncEngine.ts`)
+
 Wires together `NoteRepository` (reads/writes contact notes via
 `FileManager.processFrontMatter` — no YAML lib, Obsidian's own parser/serializer),
 `MacContactsBridge`, `reconcile()`, and `ReportWriter`. Respects `dryRun` (compute plan,
@@ -80,6 +90,7 @@ write no Mac changes) and `confirmBeforeWrite` (modal before writing). Per-card 
 failures must land in an `error` bucket rather than aborting the whole run.
 
 ### Desync report & actions (`src/sync/ReportWriter.ts`, `src/sync/actions.ts`)
+
 Every run regenerates a single report note (default `Contact Forge Sync Report.md`)
 with one section per actionable bucket. Row actions are `obsidian://contact-forge?...`
 protocol links handled in `src/main.ts`'s `registerObsidianProtocolHandler`, dispatching
@@ -87,6 +98,7 @@ to `Actions.adopt/markForDeletion/overwrite/pull/confirm`. The plugin never dele
 Mac card itself — "mark for deletion" only appends to a checklist for the user.
 
 ### Current implementation state
+
 Pure modules are complete and unit-tested: `core/hash.ts`, `core/uid.ts`,
 `sync/Reconciler.ts`, `core/types.ts`. Everything touching Obsidian/Node/JXA I/O is a
 stub with a `TODO` throw and an `IMPLEMENTATION NOTES for Claude Code` comment block

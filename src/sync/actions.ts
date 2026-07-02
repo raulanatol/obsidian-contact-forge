@@ -1,12 +1,14 @@
-import { App, TFile, normalizePath } from "obsidian";
-import type { ContactForgeSettings, MacCard, ManagedFields } from "../core/types";
-import { NoteRepository } from "./NoteRepository";
-import { MacContactsBridge } from "../contacts/MacContactsBridge";
-import { macNoteBlock, stripMarkerBlock } from "../core/uid";
-import { hashManaged } from "../core/hash";
-import { fullName } from "../core/format";
-import { appendChecklistLine } from "./deletionChecklist";
-import { log } from "../core/log";
+import { App, TFile, normalizePath } from 'obsidian';
+
+import { MacContactsBridge } from '../contacts/MacContactsBridge';
+import { fullName } from '../core/format';
+import { hashManaged } from '../core/hash';
+import { log } from '../core/log';
+import type { ContactForgeSettings, MacCard, ManagedFields } from '../core/types';
+import { macNoteBlock, stripMarkerBlock } from '../core/uid';
+
+import { appendChecklistLine } from './deletionChecklist';
+import { NoteRepository } from './NoteRepository';
 
 function managedFromCard(card: MacCard): ManagedFields {
   return {
@@ -15,7 +17,7 @@ function managedFromCard(card: MacCard): ManagedFields {
     org: card.org,
     emails: card.emails,
     phones: card.phones,
-    contactNote: stripMarkerBlock(card.note),
+    contactNote: stripMarkerBlock(card.note)
   };
 }
 
@@ -44,7 +46,7 @@ export class Actions {
       macContactId: card.id,
       managedHash: hashManaged(managed),
       syncedAt: new Date().toISOString(),
-      status: "in-sync",
+      status: 'in-sync'
     });
 
     log.notice(`Adopted "${fullName(card)}" into ${file.path}`);
@@ -77,14 +79,14 @@ export class Actions {
       id: note.macContactId,
       managed: note.managed,
       group: this.settings.sourceGroupName,
-      noteBlock: macNoteBlock(vaultName, note.obsidianUid),
+      noteBlock: macNoteBlock(vaultName, note.obsidianUid)
     });
 
     await this.notes.writeSyncState(file, {
       macContactId: id,
       managedHash: hashManaged(note.managed),
       syncedAt: new Date().toISOString(),
-      status: "in-sync",
+      status: 'in-sync'
     });
 
     log.notice(`Overwrote the Mac card from ${file.path}`);
@@ -96,7 +98,7 @@ export class Actions {
     const card = await this.findCard(cardId);
     const managed = managedFromCard(card);
 
-    await this.app.fileManager.processFrontMatter(file, (fm) => {
+    await this.app.fileManager.processFrontMatter(file, fm => {
       fm.first_name = managed.firstName;
       fm.last_name = managed.lastName;
       fm.org = managed.org;
@@ -106,7 +108,7 @@ export class Actions {
       fm.mac_contact_id = card.id;
       fm.cf_managed_hash = hashManaged(managed);
       fm.cf_synced_at = new Date().toISOString();
-      fm.cf_sync_status = "in-sync";
+      fm.cf_sync_status = 'in-sync';
     });
 
     log.notice(`Pulled the Mac card into ${file.path}`);
@@ -126,7 +128,7 @@ export class Actions {
 
   private async findCard(cardId: string): Promise<MacCard> {
     const cards = await this.bridge.dumpGroup(this.settings.sourceGroupName);
-    const card = cards.find((c) => c.id === cardId);
+    const card = cards.find(c => c.id === cardId);
     if (!card) {
       throw new Error(
         `Card ${cardId} was not found in group "${this.settings.sourceGroupName}" — it may already have been deleted.`

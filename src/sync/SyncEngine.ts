@@ -1,13 +1,15 @@
-import { App, TFile } from "obsidian";
-import type { ContactForgeSettings, ContactNote, SyncPlan } from "../core/types";
-import { NoteRepository } from "./NoteRepository";
-import { MacContactsBridge } from "../contacts/MacContactsBridge";
-import { reconcile } from "./Reconciler";
-import { ReportWriter } from "./ReportWriter";
-import { ConfirmModal } from "../ui/ConfirmModal";
-import { macNoteBlock } from "../core/uid";
-import { hashManaged } from "../core/hash";
-import { log } from "../core/log";
+import { App, TFile } from 'obsidian';
+
+import { MacContactsBridge } from '../contacts/MacContactsBridge';
+import { hashManaged } from '../core/hash';
+import { log } from '../core/log';
+import type { ContactForgeSettings, ContactNote, SyncPlan } from '../core/types';
+import { macNoteBlock } from '../core/uid';
+import { ConfirmModal } from '../ui/ConfirmModal';
+
+import { NoteRepository } from './NoteRepository';
+import { reconcile } from './Reconciler';
+import { ReportWriter } from './ReportWriter';
 
 /**
  * Orchestrates a full sync run:
@@ -32,7 +34,7 @@ export class SyncEngine {
     const dryRun = opts.dryRun ?? this.settings.dryRun;
 
     const files = await this.notes.listContactFiles();
-    const byPath = new Map(files.map((f) => [f.path, f]));
+    const byPath = new Map(files.map(f => [f.path, f]));
     const notes: ContactNote[] = [];
     for (const file of files) {
       try {
@@ -42,11 +44,11 @@ export class SyncEngine {
       }
     }
 
-    let cards = [] as Awaited<ReturnType<MacContactsBridge["dumpGroup"]>>;
+    let cards = [] as Awaited<ReturnType<MacContactsBridge['dumpGroup']>>;
     try {
       cards = await this.bridge.dumpGroup(this.settings.sourceGroupName);
     } catch (e) {
-      log.error("Failed to read Mac Contacts group", e);
+      log.error('Failed to read Mac Contacts group', e);
       log.notice((e as Error).message);
     }
 
@@ -72,7 +74,7 @@ export class SyncEngine {
     try {
       await this.report.write(plan);
     } catch (e) {
-      log.error("Failed to write sync report", e);
+      log.error('Failed to write sync report', e);
     }
 
     return plan;
@@ -92,16 +94,16 @@ export class SyncEngine {
         id: cardId,
         managed: note.managed,
         group: this.settings.sourceGroupName,
-        noteBlock: macNoteBlock(vaultName, note.obsidianUid),
+        noteBlock: macNoteBlock(vaultName, note.obsidianUid)
       });
       await this.notes.writeSyncState(file, {
         macContactId: id,
         managedHash: hashManaged(note.managed),
         syncedAt: new Date().toISOString(),
-        status: "in-sync",
+        status: 'in-sync'
       });
     } catch (e) {
-      plan.buckets.push({ kind: "error", note, message: (e as Error).message });
+      plan.buckets.push({ kind: 'error', note, message: (e as Error).message });
       plan.counts.error = (plan.counts.error ?? 0) + 1;
       log.error(`Failed to sync contact ${note.path}`, e);
     }

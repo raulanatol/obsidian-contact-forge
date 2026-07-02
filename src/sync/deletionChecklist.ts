@@ -5,10 +5,10 @@
 // drops off naturally once the card no longer shows up as orphan-mac (i.e. the
 // user actually deleted it in Contacts.app).
 
-import type { MacCard } from "../core/types";
-import { fullName } from "../core/format";
+import { fullName } from '../core/format';
+import type { MacCard } from '../core/types';
 
-export const DELETION_HEADING = "## To delete in Mac";
+export const DELETION_HEADING = '## To delete in Mac';
 
 function cardMarker(cardId: string): string {
   return `<!-- cf-delete:${cardId} -->`;
@@ -34,10 +34,7 @@ export function parseExistingChecklist(content: string): Map<string, string> {
 }
 
 /** Lines to re-render: only cards the user actually marked AND that are still orphaned. */
-export function renderDeletionSection(
-  pendingCardIds: Set<string>,
-  previousLines: Map<string, string>
-): string[] {
+export function renderDeletionSection(pendingCardIds: Set<string>, previousLines: Map<string, string>): string[] {
   const lines: string[] = [];
   for (const id of pendingCardIds) {
     const line = previousLines.get(id);
@@ -54,6 +51,6 @@ export function appendChecklistLine(content: string, card: MacCard): string {
   if (content.includes(DELETION_HEADING)) {
     return content.replace(DELETION_HEADING, `${DELETION_HEADING}\n\n${line}`);
   }
-  const sep = content.endsWith("\n") ? "" : "\n";
+  const sep = content.endsWith('\n') ? '' : '\n';
   return `${content}${sep}\n${DELETION_HEADING}\n\n${line}\n`;
 }
