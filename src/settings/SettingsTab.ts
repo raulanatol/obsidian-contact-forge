@@ -27,6 +27,19 @@ export class ContactForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Group notes by initial')
+      .setDesc(
+        'File new contact notes into a subfolder named after the first letter of ' +
+          'the slug, e.g. Contacts/j/jane-smith.md.'
+      )
+      .addToggle(tg =>
+        tg.setValue(s.groupByInitial).onChange(async v => {
+          s.groupByInitial = v;
+          await this.plugin.persist();
+        })
+      );
+
+    new Setting(containerEl)
       .setName('Source group (macOS Contacts)')
       .setDesc(
         'Name of the Contacts group treated as the synced set. Created cards join ' +

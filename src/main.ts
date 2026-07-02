@@ -60,6 +60,21 @@ export default class ContactForgePlugin extends Plugin {
     });
 
     this.addCommand({
+      id: 'sanitize-contact-filenames',
+      name: 'Sanitize contact note filenames',
+      callback: () =>
+        this.safeRun(async () => {
+          const repo = new NoteRepository(this.app, this.settings);
+          const { renamed, skipped, errors } = await repo.sanitizeFilenames();
+          log.notice(
+            `Sanitized filenames: ${renamed} renamed, ${skipped} already correct` +
+              (errors.length ? `, ${errors.length} failed` : '')
+          );
+          errors.forEach(e => log.error('sanitize-contact-filenames', e));
+        })
+    });
+
+    this.addCommand({
       id: 'open-sync-report',
       name: 'Open sync report',
       callback: () =>

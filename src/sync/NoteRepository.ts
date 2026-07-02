@@ -94,22 +94,66 @@ export class NoteRepository {
       cf_sync_status: 'dirty'
     };
 
-    const folder = normalizePath(this.settings.contactsFolder);
-    if (folder && !this.app.vault.getAbstractFileByPath(folder)) {
-      await this.app.vault.createFolder(folder);
-    }
-
     const baseName = contactFileSlug(managedFields.firstName, managedFields.lastName) || 'new-contact';
+    const folder = await this.resolveFolder(baseName);
     const path = await this.uniquePath(folder, baseName);
     const content = `---\n${stringifyYaml(fm)}---\n\n`;
     const file = await this.app.vault.create(path, content);
     return { file, uid };
   }
 
-  private async uniquePath(folder: string, baseName: string): Promise<string> {
+  /**
+   * Renames every contact note in place so its filename and folder match the
+   * current slug/grouping rules. Safe to run repeatedly: notes already in the
+   * right spot are left untouched.
+   */
+  async sanitizeFilenames(): Promise<{ renamed: number; skipped: number; errors: string[] }> {
+    const files = await this.listContactFiles();
+    let renamed = 0;
+    let skipped = 0;
+    const errors: string[] = [];
+
+    for (const file of files) {
+      try {
+        const note = await this.parse(file);
+        const baseName = contactFileSlug(note.managed.firstName, note.managed.lastName) || 'new-contact';
+        const folder = await this.resolveFolder(baseName);
+        const desiredPath = await this.uniquePath(folder, baseName, file.path);
+        if (desiredPath === file.path) {
+          skipped++;
+          continue;
+        }
+        await this.app.fileManager.renameFile(file, desiredPath);
+        renamed++;
+      } catch (e) {
+        errors.push(`${file.path}: ${(e as Error).message}`);
+      }
+    }
+
+    return { renamed, skipped, errors };
+  }
+
+  /** Resolves (and creates, if missing) the folder a note with this slug belongs in. */
+  private async resolveFolder(baseName: string): Promise<string> {
+    const rootFolder = normalizePath(this.settings.contactsFolder);
+    if (rootFolder && !this.app.vault.getAbstractFileByPath(rootFolder)) {
+      await this.app.vault.createFolder(rootFolder);
+    }
+
+    if (!this.settings.groupByInitial) return rootFolder;
+
+    const initial = baseName.charAt(0);
+    const folder = normalizePath(rootFolder ? `${rootFolder}/${initial}` : initial);
+    if (!this.app.vault.getAbstractFileByPath(folder)) {
+      await this.app.vault.createFolder(folder);
+    }
+    return folder;
+  }
+
+  private async uniquePath(folder: string, baseName: string, excludePath?: string): Promise<string> {
     let candidate = normalizePath(folder ? `${folder}/${baseName}.md` : `${baseName}.md`);
     let i = 2;
-    while (this.app.vault.getAbstractFileByPath(candidate)) {
+    while (candidate !== excludePath && this.app.vault.getAbstractFileByPath(candidate)) {
       candidate = normalizePath(folder ? `${folder}/${baseName}-${i}.md` : `${baseName}-${i}.md`);
       i++;
     }
