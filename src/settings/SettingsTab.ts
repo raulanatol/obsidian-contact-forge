@@ -1,5 +1,6 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import type ContactForgePlugin from "../main";
+import type { ContactForgeSettings } from "../core/types";
 
 export class ContactForgeSettingTab extends PluginSettingTab {
   constructor(app: App, private plugin: ContactForgePlugin) {
@@ -71,6 +72,34 @@ export class ContactForgeSettingTab extends PluginSettingTab {
         })
       );
 
-    // TODO (Claude Code): per-field managed toggles + deepLinkVaultName override.
+    containerEl.createEl("h3", { text: "Managed fields" });
+
+    const managedFieldToggle = (key: keyof ContactForgeSettings["managedFields"], name: string) => {
+      new Setting(containerEl).setName(name).addToggle((tg) =>
+        tg.setValue(s.managedFields[key]).onChange(async (v) => {
+          s.managedFields[key] = v;
+          await this.plugin.persist();
+        })
+      );
+    };
+
+    managedFieldToggle("name", "Sync name");
+    managedFieldToggle("org", "Sync organization");
+    managedFieldToggle("emails", "Sync emails");
+    managedFieldToggle("phones", "Sync phones");
+    managedFieldToggle("contactNote", "Sync contact note");
+
+    new Setting(containerEl)
+      .setName("Deep link vault name")
+      .setDesc(
+        "Overrides the vault name used in obsidian:// deep links stamped on Mac " +
+          "cards. Leave blank to auto-detect from the current vault."
+      )
+      .addText((t) =>
+        t.setValue(s.deepLinkVaultName ?? "").onChange(async (v) => {
+          s.deepLinkVaultName = v.trim() || null;
+          await this.plugin.persist();
+        })
+      );
   }
 }
