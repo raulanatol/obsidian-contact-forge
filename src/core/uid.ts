@@ -4,11 +4,11 @@
 export function newUuid(): string {
   // crypto.randomUUID is available in modern Electron; fall back if absent.
   const c = (globalThis as unknown as { crypto?: Crypto }).crypto;
-  if (c && typeof c.randomUUID === "function") return c.randomUUID();
+  if (c && typeof c.randomUUID === 'function') return c.randomUUID();
   // RFC4122-ish fallback
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (ch) => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, ch => {
     const r = (Math.random() * 16) | 0;
-    const v = ch === "x" ? r : (r & 0x3) | 0x8;
+    const v = ch === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
@@ -41,7 +41,7 @@ export function macNoteBlock(vaultName: string, uid: string): string {
 /** Strip the deep-link + cf-uid marker lines back out of a Mac card's note field. */
 export function stripMarkerBlock(note: string): string {
   return note
-    .replace(/^obsidian:\/\/search\?[^\n]*$/m, "")
-    .replace(/^cf-uid:\s*[0-9a-fA-F-]{8,}\s*$/m, "")
+    .replace(/^obsidian:\/\/search\?[^\n]*$/m, '')
+    .replace(/^cf-uid:\s*[0-9a-fA-F-]{8,}\s*$/m, '')
     .trim();
 }

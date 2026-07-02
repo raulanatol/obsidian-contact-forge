@@ -8,7 +8,7 @@ so it requires a desktop Obsidian on macOS. Nothing leaves your device.
 
 ## Why
 
-Most Obsidian contact tools pull *from* Apple/Google/iCloud *into* your vault. Contact
+Most Obsidian contact tools pull _from_ Apple/Google/iCloud _into_ your vault. Contact
 Forge does the opposite: you keep the full record — notes and all — in Obsidian, and
 push only the fields needed to identify callers, emails, and messages into a dedicated
 Contacts group. iOS benefits automatically via iCloud.
@@ -36,10 +36,10 @@ Every run writes a **Sync Report** note. Each contact lands in one bucket:
 - **in-sync** — nothing to do.
 - **updated** — note changed in Obsidian, pushed to Mac.
 - **created** — note had no card yet; a card was created in the source group.
-- **edited-in-mac** — the card diverged but the note didn't. Contact Forge does *not*
-  silently overwrite; you choose *Overwrite from Obsidian* or *Pull into Obsidian*.
-- **orphan-mac** — a card in the group has no matching note. You choose *Adopt into
-  Obsidian* or *Mark for deletion* (the plugin never deletes anything itself).
+- **edited-in-mac** — the card diverged but the note didn't. Contact Forge does _not_
+  silently overwrite; you choose _Overwrite from Obsidian_ or _Pull into Obsidian_.
+- **orphan-mac** — a card in the group has no matching note. You choose _Adopt into
+  Obsidian_ or _Mark for deletion_ (the plugin never deletes anything itself).
 - **suggestion** — a weak name+email match; confirm or ignore.
 
 ## Safety
@@ -53,7 +53,7 @@ Every run writes a **Sync Report** note. Each contact lands in one bucket:
 Community plugin (pending review) or manual — see [docs/INSTALLATION.md](docs/INSTALLATION.md).
 
 First run: grant **System Settings → Privacy & Security → Automation → Obsidian →
-Contacts**. Use the *Test Contacts access* command to trigger the prompt.
+Contacts**. Use the _Test Contacts access_ command to trigger the prompt.
 
 ## Commands
 
@@ -66,10 +66,10 @@ Contacts**. Use the *Test Contacts access* command to trigger the prompt.
 ## Development
 
 ```bash
-npm install
-npm run dev     # esbuild watch
-npm test        # pure unit tests (hash + reconciler)
-npm run build   # typecheck + production bundle
+pnpm install
+pnpm run dev     # esbuild watch
+pnpm test        # pure unit tests (hash + reconciler)
+pnpm run build   # typecheck + production bundle
 ```
 
 The reconciliation engine (`src/sync/Reconciler.ts`) and hashing (`src/core/hash.ts`)

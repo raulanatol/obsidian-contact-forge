@@ -2,24 +2,20 @@
 // Pure module: no external imports. Must yield identical hashes for identical
 // content across runs and machines (idempotency depends on this).
 
-import type { LabeledValue, ManagedFields } from "./types";
+import type { LabeledValue, ManagedFields } from './types';
 
 function normStr(s: string | undefined | null): string {
-  return (s ?? "").trim();
+  return (s ?? '').trim();
 }
 
 function normList(list: LabeledValue[] | undefined): LabeledValue[] {
   return (list ?? [])
-    .map((lv) => ({
-      label: normStr(lv.label).toLowerCase() || "other",
-      value: normStr(lv.value).toLowerCase(),
+    .map(lv => ({
+      label: normStr(lv.label).toLowerCase() || 'other',
+      value: normStr(lv.value).toLowerCase()
     }))
-    .filter((lv) => lv.value.length > 0)
-    .sort((a, b) =>
-      a.value === b.value
-        ? a.label.localeCompare(b.label)
-        : a.value.localeCompare(b.value)
-    );
+    .filter(lv => lv.value.length > 0)
+    .sort((a, b) => (a.value === b.value ? a.label.localeCompare(b.label) : a.value.localeCompare(b.value)));
 }
 
 /** Produce an order-stable, normalized view of the managed fields. */
@@ -30,7 +26,7 @@ export function canonicalize(m: ManagedFields): unknown {
     org: normStr(m.org),
     emails: normList(m.emails),
     phones: normList(m.phones),
-    contactNote: normStr(m.contactNote),
+    contactNote: normStr(m.contactNote)
   };
 }
 
@@ -42,7 +38,7 @@ export function fnv1a(input: string): string {
     // 32-bit FNV prime multiply via shifts to stay in 32-bit range
     hash = Math.imul(hash, 0x01000193) >>> 0;
   }
-  return (hash >>> 0).toString(16).padStart(8, "0");
+  return (hash >>> 0).toString(16).padStart(8, '0');
 }
 
 /** Stable hash of the managed fields. */

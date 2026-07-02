@@ -1,4 +1,4 @@
-import { Notice } from "obsidian";
+import { Notice } from 'obsidian';
 
 let debugEnabled = false;
 export function setDebug(v: boolean): void {
@@ -13,9 +13,9 @@ export const log = {
     console.warn(`[contact-forge] ${msg}`);
   },
   error(msg: string, err?: unknown): void {
-    console.error(`[contact-forge] ${msg}`, err ?? "");
+    console.error(`[contact-forge] ${msg}`, err ?? '');
   },
   notice(msg: string): void {
     new Notice(`Contact Forge: ${msg}`);
-  },
+  }
 };

@@ -1,10 +1,10 @@
-import type { LabeledValue, MacCard, ManagedFields } from "../core/types";
-import { classifyOsascriptError } from "./permissions";
+import type { LabeledValue, MacCard, ManagedFields } from '../core/types';
 
 // JXA sources are bundled as text (esbuild loader ".js" -> "text").
-import dumpGroupSrc from "./jxa/dumpGroup.js";
-import upsertCardSrc from "./jxa/upsertCard.js";
-import stampMarkerSrc from "./jxa/stampMarker.js";
+import dumpGroupSrc from './jxa/dumpGroup.js';
+import stampMarkerSrc from './jxa/stampMarker.js';
+import upsertCardSrc from './jxa/upsertCard.js';
+import { classifyOsascriptError } from './permissions';
 
 interface ExecFileError extends Error {
   stdout?: string;
@@ -20,24 +20,19 @@ interface ExecFileError extends Error {
  */
 export class MacContactsBridge {
   private async run(script: string, payload: unknown): Promise<unknown> {
-    const { execFile } = await import("child_process");
-    const { promisify } = await import("util");
-    const fs = await import("fs/promises");
-    const os = await import("os");
-    const path = await import("path");
-    const { randomUUID } = await import("crypto");
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
+    const fs = await import('fs/promises');
+    const os = await import('os');
+    const path = await import('path');
+    const { randomUUID } = await import('crypto');
 
     const execFileAsync = promisify(execFile);
     const tmpFile = path.join(os.tmpdir(), `contact-forge-${randomUUID()}.js`);
-    await fs.writeFile(tmpFile, script, "utf8");
+    await fs.writeFile(tmpFile, script, 'utf8');
 
     try {
-      const { stdout } = await execFileAsync("osascript", [
-        "-l",
-        "JavaScript",
-        tmpFile,
-        JSON.stringify(payload),
-      ]);
+      const { stdout } = await execFileAsync('osascript', ['-l', 'JavaScript', tmpFile, JSON.stringify(payload)]);
       try {
         return JSON.parse(stdout);
       } catch {
@@ -59,14 +54,12 @@ export class MacContactsBridge {
     return out as MacCard[];
   }
 
-  async upsertCard(
-    card: {
-      id: string | null;
-      managed: ManagedFields;
-      group: string;
-      noteBlock: string; // deep link + marker to append/replace
-    }
-  ): Promise<{ id: string }> {
+  async upsertCard(card: {
+    id: string | null;
+    managed: ManagedFields;
+    group: string;
+    noteBlock: string; // deep link + marker to append/replace
+  }): Promise<{ id: string }> {
     const out = await this.run(upsertCardSrc, card);
     return out as { id: string };
   }
@@ -78,7 +71,7 @@ export class MacContactsBridge {
   async testAccess(groupName: string): Promise<{ ok: boolean; message: string }> {
     try {
       await this.dumpGroup(groupName);
-      return { ok: true, message: "Contacts access OK" };
+      return { ok: true, message: 'Contacts access OK' };
     } catch (e) {
       return { ok: false, message: (e as Error).message };
     }
@@ -87,5 +80,5 @@ export class MacContactsBridge {
 
 // helper kept here for the bridge's mapping code
 export function toLabeled(v: string | LabeledValue): LabeledValue {
-  return typeof v === "string" ? { label: "other", value: v } : v;
+  return typeof v === 'string' ? { label: 'other', value: v } : v;
 }

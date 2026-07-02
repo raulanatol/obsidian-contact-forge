@@ -14,5 +14,9 @@
 .contact-forge-action.is-destructive {
   color: var(--text-error);
 }
-.contact-forge-status-orphan { color: var(--text-warning); }
-.contact-forge-status-error { color: var(--text-error); }
+.contact-forge-status-orphan {
+  color: var(--text-warning);
+}
+.contact-forge-status-error {
+  color: var(--text-error);
+}

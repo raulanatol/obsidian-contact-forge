@@ -5,7 +5,9 @@ function run(argv) {
   var input = JSON.parse(argv[0] || '{}');
   var Contacts = Application('Contacts');
   var found = Contacts.people.whose({ id: input.id });
-  if (!found.length) { throw new Error('person-not-found:' + input.id); }
+  if (!found.length) {
+    throw new Error('person-not-found:' + input.id);
+  }
   var person = found[0];
   var note = person.note() || '';
   note = note
