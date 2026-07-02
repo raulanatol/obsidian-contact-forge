@@ -1,0 +1,18 @@
+/* Contact Forge — report action buttons */
+.contact-forge-action {
+  display: inline-block;
+  padding: 2px 10px;
+  margin-right: 6px;
+  border-radius: var(--radius-s);
+  background: var(--interactive-normal);
+  cursor: pointer;
+  font-size: var(--font-ui-smaller);
+}
+.contact-forge-action:hover {
+  background: var(--interactive-hover);
+}
+.contact-forge-action.is-destructive {
+  color: var(--text-error);
+}
+.contact-forge-status-orphan { color: var(--text-warning); }
+.contact-forge-status-error { color: var(--text-error); }
