@@ -25,7 +25,6 @@
   },
   "devDependencies": {
     "@types/node": "^20.19.43",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.20.0",
     "obsidian": "latest",
     "oxfmt": "0.57.0",

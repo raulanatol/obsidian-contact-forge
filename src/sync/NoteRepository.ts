@@ -6,11 +6,11 @@ import { newUuid } from '../core/uid';
 
 function normalizeLabeledList(list: unknown): LabeledValue[] {
   if (!Array.isArray(list)) return [];
-  return list.map(item =>
-    typeof item === 'string'
-      ? { label: 'other', value: item }
-      : { label: String(item?.label ?? 'other'), value: String(item?.value ?? '') }
-  );
+  return (list as unknown[]).map(item => {
+    if (typeof item === 'string') return { label: 'other', value: item };
+    const obj = item as Record<string, unknown> | null | undefined;
+    return { label: String(obj?.label ?? 'other'), value: String(obj?.value ?? '') };
+  });
 }
 
 /**
@@ -31,24 +31,24 @@ export class NoteRepository {
   }
 
   async parse(file: TFile): Promise<ContactNote> {
-    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
     if (!fm || !fm.obsidian_uid) {
       throw new Error(`Contact note ${file.path} is missing obsidian_uid frontmatter`);
     }
     return {
       path: file.path,
       obsidianUid: String(fm.obsidian_uid),
-      macContactId: fm.mac_contact_id ?? null,
+      macContactId: (fm.mac_contact_id as string | undefined) ?? null,
       managed: {
-        firstName: fm.first_name ?? '',
-        lastName: fm.last_name ?? '',
-        org: fm.org ?? '',
+        firstName: (fm.first_name as string | undefined) ?? '',
+        lastName: (fm.last_name as string | undefined) ?? '',
+        org: (fm.org as string | undefined) ?? '',
         emails: normalizeLabeledList(fm.emails),
         phones: normalizeLabeledList(fm.phones),
-        contactNote: fm.contact_note ?? ''
+        contactNote: (fm.contact_note as string | undefined) ?? ''
       },
-      managedHash: fm.cf_managed_hash ?? null,
-      syncedAt: fm.cf_synced_at ?? null,
+      managedHash: (fm.cf_managed_hash as string | undefined) ?? null,
+      syncedAt: (fm.cf_synced_at as string | undefined) ?? null,
       syncEnabled: fm.cf_sync !== false
     };
   }
@@ -62,7 +62,7 @@ export class NoteRepository {
       status?: string;
     }
   ): Promise<void> {
-    await this.app.fileManager.processFrontMatter(file, fm => {
+    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
       if (state.macContactId !== undefined) fm.mac_contact_id = state.macContactId;
       if (state.managedHash !== undefined) fm.cf_managed_hash = state.managedHash;
       if (state.syncedAt !== undefined) fm.cf_synced_at = state.syncedAt;

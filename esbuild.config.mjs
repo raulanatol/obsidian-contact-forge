@@ -1,6 +1,6 @@
+import { builtinModules } from 'node:module';
 import process from 'process';
 
-import builtins from 'builtin-modules';
 import esbuild from 'esbuild';
 
 const banner = `/*
@@ -14,7 +14,7 @@ const context = await esbuild.context({
   banner: { js: banner },
   entryPoints: ['src/main.ts'],
   bundle: true,
-  external: ['obsidian', 'electron', 'child_process', 'util', 'fs', 'os', 'path', ...builtins],
+  external: ['obsidian', 'electron', ...builtinModules],
   format: 'cjs',
   target: 'es2018',
   logLevel: 'info',

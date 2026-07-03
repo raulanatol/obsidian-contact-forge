@@ -3,7 +3,6 @@ import { randomUUID } from 'crypto';
 import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
-import { promisify } from 'util';
 
 import type { LabeledValue, MacCard, ManagedFields } from '../core/types';
 
@@ -13,11 +12,21 @@ import stampMarkerSrc from './jxa/stampMarker.js';
 import upsertCardSrc from './jxa/upsertCard.js';
 import { classifyOsascriptError } from './permissions';
 
-const execFileAsync = promisify(execFile);
-
 interface ExecFileError extends Error {
   stdout?: string;
   stderr?: string;
+}
+
+function execFileAsync(command: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    execFile(command, args, (error, stdout, stderr) => {
+      if (error) {
+        reject(Object.assign(error, { stdout, stderr }) as ExecFileError);
+        return;
+      }
+      resolve({ stdout, stderr });
+    });
+  });
 }
 
 /**

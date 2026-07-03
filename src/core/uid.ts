@@ -3,7 +3,8 @@
 
 export function newUuid(): string {
   // crypto.randomUUID is available in modern Electron; fall back if absent.
-  const c = (globalThis as unknown as { crypto?: Crypto }).crypto;
+  // Use `window` rather than `globalThis` for popout-window compatibility.
+  const c = window.crypto;
   if (c && typeof c.randomUUID === 'function') return c.randomUUID();
   // RFC4122-ish fallback
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, ch => {

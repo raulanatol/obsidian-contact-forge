@@ -98,7 +98,7 @@ export class Actions {
     const card = await this.findCard(cardId);
     const managed = managedFromCard(card);
 
-    await this.app.fileManager.processFrontMatter(file, fm => {
+    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
       fm.first_name = managed.firstName;
       fm.last_name = managed.lastName;
       fm.org = managed.org;

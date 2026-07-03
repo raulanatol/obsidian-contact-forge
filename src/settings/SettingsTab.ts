@@ -83,7 +83,7 @@ export class ContactForgeSettingTab extends PluginSettingTab {
       })
     );
 
-    containerEl.createEl('h3', { text: 'Managed fields' });
+    new Setting(containerEl).setName('Managed fields').setHeading();
 
     const managedFieldToggle = (key: keyof ContactForgeSettings['managedFields'], name: string) => {
       new Setting(containerEl).setName(name).addToggle(tg =>
