@@ -15,6 +15,7 @@ for the authoritative steps; summary as of this writing:
    policies, and submit.
 
 Common review asks (unchanged from the old process):
+
 - No `console.log` outside a debug gate (we use `src/core/log.ts`).
 - No private Obsidian APIs.
 - Clear README disclosure of macOS-only + Automation permission + overwrite behavior.
