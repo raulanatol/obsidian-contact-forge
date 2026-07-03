@@ -22,8 +22,9 @@ function managedFromCard(card: MacCard): ManagedFields {
 }
 
 /**
- * Handlers for report action links (invoked by the protocol handler in main.ts).
- * All of these are user-initiated, per-row decisions.
+ * Handlers for report action links (invoked by the protocol handler in main.ts)
+ * plus bulkAdopt, the explicit opt-in batch version used by the
+ * "Bulk adopt all orphan contacts" command. All are user-initiated.
  */
 export class Actions {
   constructor(
@@ -36,6 +37,28 @@ export class Actions {
   // orphan-mac -> create a CN from the card, generate UUID, stamp marker, cache id.
   async adopt(cardId: string): Promise<void> {
     const card = await this.findCard(cardId);
+    const file = await this.adoptCard(card);
+    log.notice(`Adopted "${fullName(card)}" into ${file.path}`);
+  }
+
+  // Bulk version of adopt(): takes already-fetched cards (e.g. every orphan-mac
+  // bucket from one SyncPlan) so it doesn't re-dump all of Contacts per card.
+  // Per-card failures are collected rather than aborting the whole batch.
+  async bulkAdopt(cards: MacCard[]): Promise<{ adopted: number; errors: { card: MacCard; message: string }[] }> {
+    let adopted = 0;
+    const errors: { card: MacCard; message: string }[] = [];
+    for (const card of cards) {
+      try {
+        await this.adoptCard(card);
+        adopted++;
+      } catch (e) {
+        errors.push({ card, message: (e as Error).message });
+      }
+    }
+    return { adopted, errors };
+  }
+
+  private async adoptCard(card: MacCard): Promise<TFile> {
     const managed = managedFromCard(card);
 
     const { file, uid } = await this.notes.createFromTemplate(managed);
@@ -49,7 +72,7 @@ export class Actions {
       status: 'in-sync'
     });
 
-    log.notice(`Adopted "${fullName(card)}" into ${file.path}`);
+    return file;
   }
 
   // orphan-mac -> append to a 'To delete in Mac' checklist; plugin never deletes.
@@ -78,7 +101,7 @@ export class Actions {
     const { id } = await this.bridge.upsertCard({
       id: note.macContactId,
       managed: note.managed,
-      group: this.settings.sourceGroupName,
+      group: this.settings.syncAllContacts ? null : this.settings.sourceGroupName,
       noteBlock: macNoteBlock(vaultName, note.obsidianUid)
     });
 
@@ -127,12 +150,11 @@ export class Actions {
   }
 
   private async findCard(cardId: string): Promise<MacCard> {
-    const cards = await this.bridge.dumpGroup(this.settings.sourceGroupName);
+    const cards = await this.bridge.dumpGroup(this.settings.syncAllContacts ? null : this.settings.sourceGroupName);
     const card = cards.find(c => c.id === cardId);
     if (!card) {
-      throw new Error(
-        `Card ${cardId} was not found in group "${this.settings.sourceGroupName}" — it may already have been deleted.`
-      );
+      const scope = this.settings.syncAllContacts ? 'Contacts.app' : `group "${this.settings.sourceGroupName}"`;
+      throw new Error(`Card ${cardId} was not found in ${scope} — it may already have been deleted.`);
     }
     return card;
   }

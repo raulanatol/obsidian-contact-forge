@@ -125,7 +125,8 @@ Keep the human-facing deep link and the machine marker on separate lines.
 ## 4. Reconciliation engine (THE CORE — implement carefully)
 
 Input: (a) all contact notes in the configured folder, (b) a JXA dump of the cards in
-the configured **source set** (a named Contacts group / "smart list"; configurable).
+the configured **source set** — either a named Contacts group / "smart list", or, with
+`syncAllContacts` enabled, every contact in Contacts.app.
 
 ### 4.1 Matching precedence
 
@@ -171,11 +172,14 @@ empty report. Add an integration-style test asserting this.
 
 `src/contacts/MacContactsBridge.ts` wraps three JXA scripts:
 
-- `dumpGroup(groupName)` → returns JSON array of cards: `{ id, firstName, lastName,
-org, emails:[{label,value}], phones:[{label,value}], note, cfUid|null }`.
+- `dumpGroup(groupName | null)` → returns JSON array of cards: `{ id, firstName,
+lastName, org, emails:[{label,value}], phones:[{label,value}], note, cfUid|null }`.
+  Passing `null` (syncAllContacts mode) reads every person in Contacts.app instead of
+  a single named group.
 - `upsertCard(card)` → create if `id` absent else update by `id`; write only managed
-  fields; preserve image/groups/others; ensure card is a member of the source group;
-  return the (possibly new) `id`.
+  fields; preserve image/groups/others; ensure card is a member of the source group
+  (skipped when `group` is `null`, i.e. syncAllContacts mode); return the (possibly
+  new) `id`.
 - `stampMarker(id, uuid, deepLink)` → idempotently ensure the `cf-uid:` marker + deep
   link exist in the note field.
 
@@ -219,6 +223,16 @@ Obsidian` (update note frontmatter from card, recompute hash).
 Implement actions as registered plugin commands that take a `uid`/`cardId` param via a
 custom `obsidian://contact-forge?...` protocol handler (`registerObsidianProtocolHandler`).
 
+### 6.1 Bulk adopt (initial import)
+
+The `bulk-adopt-orphans` command (`src/main.ts`) is the one exception to "adopt is
+always per-row": it runs a dry-run sync to collect every `orphan-mac` bucket card,
+shows a `BulkAdoptModal` summarizing the count, and on confirm calls
+`Actions.bulkAdopt(cards)`, which loops `Actions.adoptCard()` (the same logic `adopt()`
+uses) and collects per-card errors instead of aborting the batch. Intended as a
+one-time initial-import path — most useful together with `syncAllContacts` — not a
+replacement for the per-row report workflow, which still exists for everyday orphans.
+
 ---
 
 ## 7. Settings
@@ -228,6 +242,10 @@ custom `obsidian://contact-forge?...` protocol handler (`registerObsidianProtoco
 - `contactsFolder` (default `"Contacts"`)
 - `sourceGroupName` — the Contacts group to treat as the synced set (default e.g.
   `"Obsidian"`). All creates join this group; only this group is scanned for orphans.
+- `syncAllContacts` (default `false`) — when on, ignores `sourceGroupName` and treats
+  every contact in Contacts.app as the synced set; new contacts created from Obsidian
+  join no group. Note this can turn every unmatched Mac contact into an `orphan-mac`
+  row on the first run.
 - `reportPath` (default `"Contact Forge Sync Report.md"`)
 - `deepLinkVaultName` (auto-detected from `app.vault.getName()`, overridable)
 - `managedFields` toggles per field (default: all on) — even though the user chose
@@ -275,9 +293,10 @@ src/
     SyncEngine.ts             # orchestrates: read notes + cards, reconcile, apply
                               #   plan (respecting dryRun/confirm), write report.
     ReportWriter.ts           # renders ReportModel to markdown with action links.
-    actions.ts                # adopt / markForDeletion / overwrite / pull / confirm.
+    actions.ts                # adopt / bulkAdopt / markForDeletion / overwrite / pull / confirm.
   ui/
     ConfirmModal.ts           # pre-write summary modal.
+    BulkAdoptModal.ts         # confirmation for the bulk-adopt-orphans command.
     reportPostProcessor.ts    # optional: render action links as buttons.
   settings/
     Settings.ts               # defaults + load/save.
@@ -311,14 +330,13 @@ src/
 - Add entry to `community-plugins.json` via PR to `obsidianmd/obsidian-releases`
   (see docs/SUBMISSION.md).
 - Security note in README: the plugin runs `osascript` locally, reads/writes only the
-  configured Contacts group, sends nothing off-device. This matches a privacy-first
-  posture.
+  configured Contacts group (or, if `syncAllContacts` is enabled, the whole local
+  address book), sends nothing off-device. This matches a privacy-first posture.
 
 ---
 
 ## 12. Explicit non-goals for v1
 
 - No automatic/scheduled sync.
-- No Mac → Obsidian bulk import (only per-row adopt from the report).
 - No iOS support (runtime is macOS-only; iOS benefits indirectly via iCloud).
 - No conflict auto-merge — conflicts always go to the report for a human decision.

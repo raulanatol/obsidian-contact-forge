@@ -1,15 +1,21 @@
-// JXA: dump managed fields of every person in a named group.
-// Input (argv[0] after script): JSON {"group":"Obsidian"}
+// JXA: dump managed fields of every person in a named group, or every person
+// in Contacts.app when input.all is true (input.group is then ignored).
+// Input (argv[0] after script): JSON {"group":"Obsidian","all":false}
 // Output: JSON array of cards on stdout.
 function run(argv) {
   ObjC.import('stdlib');
   var input = JSON.parse(argv[0] || '{}');
   var Contacts = Application('Contacts');
-  var groups = Contacts.groups.whose({ name: input.group });
-  if (groups.length === 0) {
-    throw new Error('group-not-found:' + input.group);
+  var people;
+  if (input.all) {
+    people = Contacts.people();
+  } else {
+    var groups = Contacts.groups.whose({ name: input.group });
+    if (groups.length === 0) {
+      throw new Error('group-not-found:' + input.group);
+    }
+    people = groups[0].people();
   }
-  var people = groups[0].people();
   var out = [];
   for (var i = 0; i < people.length; i++) {
     var p = people[i];

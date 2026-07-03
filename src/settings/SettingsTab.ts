@@ -40,16 +40,37 @@ export class ContactForgeSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
+      .setName('Sync all contacts (macOS Contacts)')
+      .setDesc(
+        'Ignore the source group below and read/scan every contact in Contacts.app. ' +
+          'New contacts created from Obsidian will not be added to any group. Every ' +
+          'existing Mac contact without a matching note will show up as "orphan-mac" ' +
+          'in the sync report — this can be a long list on the first run.'
+      )
+      .addToggle(tg =>
+        tg.setValue(s.syncAllContacts).onChange(async v => {
+          s.syncAllContacts = v;
+          await this.plugin.persist();
+          this.display();
+        })
+      );
+
+    new Setting(containerEl)
       .setName('Source group (macOS Contacts)')
       .setDesc(
-        'Name of the Contacts group treated as the synced set. Created cards join ' +
-          'this group; only this group is scanned for orphans.'
+        s.syncAllContacts
+          ? 'Ignored while "Sync all contacts" is on.'
+          : 'Name of the Contacts group treated as the synced set. Created cards join ' +
+              'this group; only this group is scanned for orphans.'
       )
       .addText(t =>
-        t.setValue(s.sourceGroupName).onChange(async v => {
-          s.sourceGroupName = v.trim() || 'Obsidian';
-          await this.plugin.persist();
-        })
+        t
+          .setValue(s.sourceGroupName)
+          .setDisabled(s.syncAllContacts)
+          .onChange(async v => {
+            s.sourceGroupName = v.trim() || 'Obsidian';
+            await this.plugin.persist();
+          })
       );
 
     new Setting(containerEl).setName('Report path').addText(t =>

@@ -1,13 +1,15 @@
 import { Plugin } from 'obsidian';
 
 import { MacContactsBridge } from './contacts/MacContactsBridge';
+import { fullName } from './core/format';
 import { setDebug, log } from './core/log';
-import type { ContactForgeSettings } from './core/types';
+import type { Bucket, ContactForgeSettings } from './core/types';
 import { loadSettings, saveSettings } from './settings/Settings';
 import { ContactForgeSettingTab } from './settings/SettingsTab';
 import { Actions } from './sync/actions';
 import { NoteRepository } from './sync/NoteRepository';
 import { SyncEngine } from './sync/SyncEngine';
+import { BulkAdoptModal } from './ui/BulkAdoptModal';
 import { registerReportPostProcessor } from './ui/reportPostProcessor';
 
 export default class ContactForgePlugin extends Plugin {
@@ -43,8 +45,36 @@ export default class ContactForgePlugin extends Plugin {
       name: 'Test Contacts access',
       callback: () =>
         this.safeRun(async () => {
-          const r = await this.bridge.testAccess(this.settings.sourceGroupName);
+          const r = await this.bridge.testAccess(this.settings.syncAllContacts ? null : this.settings.sourceGroupName);
           log.notice(r.message);
+        })
+    });
+
+    this.addCommand({
+      id: 'bulk-adopt-orphans',
+      name: 'Bulk adopt all orphan contacts into Obsidian',
+      callback: () =>
+        this.safeRun(async () => {
+          const plan = await this.engine.run({ dryRun: true });
+          const orphanCards = plan.buckets
+            .filter((b): b is Extract<Bucket, { kind: 'orphan-mac' }> => b.kind === 'orphan-mac')
+            .map(b => b.card);
+
+          if (orphanCards.length === 0) {
+            log.notice('No orphan Mac contacts to adopt.');
+            return;
+          }
+
+          const confirmed = await new BulkAdoptModal(this.app, orphanCards.length).openAndWait();
+          if (!confirmed) return;
+
+          const { adopted, errors } = await this.actions.bulkAdopt(orphanCards);
+          log.notice(
+            `Adopted ${adopted} contact${adopted === 1 ? '' : 's'}` +
+              (errors.length ? `, ${errors.length} failed` : '') +
+              '. Run a sync to refresh the report.'
+          );
+          errors.forEach(({ card, message }) => log.error(`bulk-adopt-orphans: ${fullName(card)}`, message));
         })
     });
 
