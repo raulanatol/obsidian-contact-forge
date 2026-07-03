@@ -87,6 +87,7 @@ Contacts**. Use the _Test Contacts access_ command to trigger the prompt.
 - Contact Forge: Sync contacts to Mac
 - Contact Forge: Dry-run (report only, no writes)
 - Contact Forge: Test Contacts access
+- Contact Forge: Bulk adopt all orphan contacts into Obsidian
 - Contact Forge: Create contact note from template
 - Contact Forge: Open sync report
 

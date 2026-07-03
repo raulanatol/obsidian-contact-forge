@@ -65,6 +65,7 @@ export interface SyncPlan {
 export interface ContactForgeSettings {
   contactsFolder: string;
   groupByInitial: boolean; // file new contact notes into a subfolder by first-letter initial
+  syncAllContacts: boolean; // ignore sourceGroupName and read/scan every card in Contacts.app
   sourceGroupName: string;
   reportPath: string;
   deepLinkVaultName: string | null; // null => auto-detect
@@ -83,6 +84,7 @@ export interface ContactForgeSettings {
 export const DEFAULT_SETTINGS: ContactForgeSettings = {
   contactsFolder: 'Contacts',
   groupByInitial: true,
+  syncAllContacts: false,
   sourceGroupName: 'Obsidian',
   reportPath: 'Contact Forge Sync Report.md',
   deepLinkVaultName: null,

@@ -46,7 +46,7 @@ export class SyncEngine {
 
     let cards = [] as Awaited<ReturnType<MacContactsBridge['dumpGroup']>>;
     try {
-      cards = await this.bridge.dumpGroup(this.settings.sourceGroupName);
+      cards = await this.bridge.dumpGroup(this.settings.syncAllContacts ? null : this.settings.sourceGroupName);
     } catch (e) {
       log.error('Failed to read Mac Contacts group', e);
       log.notice((e as Error).message);
@@ -93,7 +93,7 @@ export class SyncEngine {
       const { id } = await this.bridge.upsertCard({
         id: cardId,
         managed: note.managed,
-        group: this.settings.sourceGroupName,
+        group: this.settings.syncAllContacts ? null : this.settings.sourceGroupName,
         noteBlock: macNoteBlock(vaultName, note.obsidianUid)
       });
       await this.notes.writeSyncState(file, {

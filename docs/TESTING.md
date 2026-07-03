@@ -2,7 +2,8 @@
 
 Unit tests cover hashing and reconciliation. The osascript paths need a real Mac.
 
-**Status: validated on macOS, 2026-07-02 — all 9 scenarios pass.**
+**Status: validated on macOS, 2026-07-02 — all 9 scenarios pass. Scenarios 10-11 added
+2026-07-03, not yet validated on a real Mac.**
 
 1. [x] **Access** — deny automation permission, run sync → guidance Notice appears.
        Grant it, run **Test Contacts access** → "Contacts access OK".
@@ -19,3 +20,13 @@ Unit tests cover hashing and reconciliation. The osascript paths need a real Mac
 8. [x] **Suggestion** — a card with same name+email but no marker/id → suggestion row;
        Confirm links both sides.
 9. [x] **Dry run** — with dry run on, verify report is produced but Contacts is untouched.
+10. [ ] **Sync all contacts** — enable "Sync all contacts", sync → cards outside the
+        configured source group are read; every unmatched Mac contact shows up as an
+        orphan row; newly created cards join no group; disable the toggle → source
+        group field re-enables and only that group is scanned again.
+11. [ ] **Bulk adopt orphans** — with several orphan-mac cards present, run "Bulk adopt
+        all orphan contacts into Obsidian" → modal shows the correct count; Cancel does
+        nothing; Confirm creates one note per orphan, stamps each card's marker, and
+        marks each note in-sync; a card that errors (e.g. permission revoked mid-run)
+        is reported without stopping the rest of the batch. Running the command again
+        with zero orphans shows "No orphan Mac contacts to adopt."

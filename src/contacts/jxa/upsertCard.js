@@ -60,6 +60,7 @@ function replacePhones(Contacts, person, list) {
   });
 }
 function ensureInGroup(Contacts, person, groupName) {
+  if (!groupName) return; // syncAllContacts mode: no group to join.
   // Pushing an already-committed person into groups[0].people re-triggers a
   // "make new" event and blanks the record. Use the "add ... to ..." command
   // (JXA idiom: app.add(obj, {to: dest})) to add an existing person to a group.

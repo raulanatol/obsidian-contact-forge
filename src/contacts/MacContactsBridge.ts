@@ -59,15 +59,16 @@ export class MacContactsBridge {
     }
   }
 
-  async dumpGroup(groupName: string): Promise<MacCard[]> {
-    const out = await this.run(dumpGroupSrc, { group: groupName });
+  /** Pass `groupName: null` to read every card in Contacts.app (syncAllContacts mode). */
+  async dumpGroup(groupName: string | null): Promise<MacCard[]> {
+    const out = await this.run(dumpGroupSrc, { group: groupName, all: groupName === null });
     return out as MacCard[];
   }
 
   async upsertCard(card: {
     id: string | null;
     managed: ManagedFields;
-    group: string;
+    group: string | null; // null => don't join any group (syncAllContacts mode)
     noteBlock: string; // deep link + marker to append/replace
   }): Promise<{ id: string }> {
     const out = await this.run(upsertCardSrc, card);
@@ -78,7 +79,7 @@ export class MacContactsBridge {
     await this.run(stampMarkerSrc, { id, uid, noteBlock });
   }
 
-  async testAccess(groupName: string): Promise<{ ok: boolean; message: string }> {
+  async testAccess(groupName: string | null): Promise<{ ok: boolean; message: string }> {
     try {
       await this.dumpGroup(groupName);
       return { ok: true, message: 'Contacts access OK' };
