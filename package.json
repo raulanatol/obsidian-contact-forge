@@ -1,6 +1,6 @@
 {
   "name": "obsidian-contact-forge",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Source of truth for your contacts, with one-way sync to macOS Contacts.",
   "keywords": [
     "contacts",
