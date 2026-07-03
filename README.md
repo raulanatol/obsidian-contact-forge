@@ -62,6 +62,19 @@ Every run writes a **Sync Report** note. Each contact lands in one bucket:
 - The plugin only reads/writes the one Contacts group you configure.
 - No network calls, no telemetry. Everything runs locally through `osascript`.
 
+This plugin requests capabilities beyond the typical Obsidian plugin because syncing to
+Contacts.app has no alternative on macOS. For transparency:
+
+- **Shell execution** (`child_process`): the only way to talk to Contacts.app is
+  `osascript -l JavaScript`. There is no Obsidian or Node API for it.
+- **Filesystem access** (`fs`, outside the vault): JXA payloads are written to a
+  temp file in `os.tmpdir()` and passed to `osascript` by path, then deleted. This
+  avoids the argv length limits and quoting bugs that come with inlining large
+  scripts via `osascript -e`. No vault or user file is ever touched through `fs`.
+- **Vault enumeration** (`vault.getMarkdownFiles()`): Obsidian has no folder-scoped
+  listing API, so the plugin lists all markdown files and filters to the configured
+  contacts folder client-side before reading anything.
+
 ## Install
 
 Community plugin (pending review) or manual — see [docs/INSTALLATION.md](docs/INSTALLATION.md).
