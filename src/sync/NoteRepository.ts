@@ -9,7 +9,9 @@ function normalizeLabeledList(list: unknown): LabeledValue[] {
   return (list as unknown[]).map(item => {
     if (typeof item === 'string') return { label: 'other', value: item };
     const obj = item as Record<string, unknown> | null | undefined;
-    return { label: String(obj?.label ?? 'other'), value: String(obj?.value ?? '') };
+    const label = typeof obj?.label === 'string' ? obj.label : 'other';
+    const value = typeof obj?.value === 'string' ? obj.value : '';
+    return { label, value };
   });
 }
 
@@ -24,18 +26,18 @@ export class NoteRepository {
     private settings: ContactForgeSettings
   ) {}
 
-  async listContactFiles(): Promise<TFile[]> {
+  listContactFiles(): Promise<TFile[]> {
     const folder = normalizePath(this.settings.contactsFolder);
     const prefix = folder ? `${folder}/` : '';
-    return this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(prefix));
+    return Promise.resolve(this.app.vault.getMarkdownFiles().filter(f => f.path.startsWith(prefix)));
   }
 
-  async parse(file: TFile): Promise<ContactNote> {
-    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter as Record<string, unknown> | undefined;
+  parse(file: TFile): Promise<ContactNote> {
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
     if (!fm || !fm.obsidian_uid) {
       throw new Error(`Contact note ${file.path} is missing obsidian_uid frontmatter`);
     }
-    return {
+    return Promise.resolve({
       path: file.path,
       obsidianUid: String(fm.obsidian_uid),
       macContactId: (fm.mac_contact_id as string | undefined) ?? null,
@@ -50,7 +52,7 @@ export class NoteRepository {
       managedHash: (fm.cf_managed_hash as string | undefined) ?? null,
       syncedAt: (fm.cf_synced_at as string | undefined) ?? null,
       syncEnabled: fm.cf_sync !== false
-    };
+    });
   }
 
   async writeSyncState(
@@ -150,13 +152,13 @@ export class NoteRepository {
     return folder;
   }
 
-  private async uniquePath(folder: string, baseName: string, excludePath?: string): Promise<string> {
+  private uniquePath(folder: string, baseName: string, excludePath?: string): Promise<string> {
     let candidate = normalizePath(folder ? `${folder}/${baseName}.md` : `${baseName}.md`);
     let i = 2;
     while (candidate !== excludePath && this.app.vault.getAbstractFileByPath(candidate)) {
       candidate = normalizePath(folder ? `${folder}/${baseName}-${i}.md` : `${baseName}-${i}.md`);
       i++;
     }
-    return candidate;
+    return Promise.resolve(candidate);
   }
 }
