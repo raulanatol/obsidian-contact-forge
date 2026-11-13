@@ -7,6 +7,7 @@ import type { ContactForgeSettings, ContactNote, MacCard, SyncPlan } from '../co
 import { macNoteBlock } from '../core/uid';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
+import { decide, preflight } from './autoSyncPolicy';
 import { NoteRepository } from './NoteRepository';
 import { reconcile } from './Reconciler';
 import { ReportWriter } from './ReportWriter';
@@ -21,6 +22,12 @@ import { ReportWriter } from './ReportWriter';
  *   5. ReportWriter.write(plan) -> report note (Phase F; failures here must not
  *      abort a sync that already applied writes)
  */
+export type AutoSyncResult =
+  | { status: 'skipped' }
+  | { status: 'pushed'; note: ContactNote }
+  | { status: 'conflict'; note: ContactNote }
+  | { status: 'error'; note: ContactNote; message: string };
+
 export class SyncEngine {
   constructor(
     private app: App,
@@ -88,6 +95,41 @@ export class SyncEngine {
     return plan;
   }
 
+  /**
+   * Auto-sync entry point: push a single edited note, following the same rules as
+   * a full run (see autoSyncPolicy). Reads at most one card from Contacts.
+   */
+  async syncNote(file: TFile): Promise<AutoSyncResult> {
+    let note: ContactNote;
+    try {
+      note = await this.notes.parse(file);
+    } catch {
+      return { status: 'skipped' }; // not a contact note (yet): no obsidian_uid
+    }
+
+    const pre = preflight(note);
+    if (pre.action === 'skip') return { status: 'skipped' };
+
+    const card = pre.action === 'fetch-card' ? await this.bridge.getCard(pre.cardId) : null;
+    const related = await this.notes.findRelated(note, card?.cfUid ?? null);
+    const decision = decide(note, related, card);
+
+    switch (decision.action) {
+      case 'skip':
+        return { status: 'skipped' };
+      case 'conflict':
+        return { status: 'conflict', note };
+      case 'error':
+        return { status: 'error', note, message: decision.message };
+      case 'push': {
+        if (this.settings.dryRun) return { status: 'skipped' };
+        const vaultName = this.settings.deepLinkVaultName ?? this.app.vault.getName();
+        await this.push(note, decision.cardId, vaultName, file);
+        return { status: 'pushed', note };
+      }
+    }
+  }
+
   private async pushNote(
     note: ContactNote,
     cardId: string | null,
@@ -98,22 +140,26 @@ export class SyncEngine {
     const file = byPath.get(note.path);
     if (!file) return;
     try {
-      const { id } = await this.bridge.upsertCard({
-        id: cardId,
-        managed: note.managed,
-        group: this.settings.syncAllContacts ? null : this.settings.sourceGroupName,
-        noteBlock: macNoteBlock(vaultName, note.obsidianUid)
-      });
-      await this.notes.writeSyncState(file, {
-        macContactId: id,
-        managedHash: hashManaged(note.managed),
-        syncedAt: new Date().toISOString(),
-        status: 'in-sync'
-      });
+      await this.push(note, cardId, vaultName, file);
     } catch (e) {
       plan.buckets.push({ kind: 'error', note, message: (e as Error).message });
       plan.counts.error = (plan.counts.error ?? 0) + 1;
       log.error(`Failed to sync contact ${note.path}`, e);
     }
+  }
+
+  private async push(note: ContactNote, cardId: string | null, vaultName: string, file: TFile): Promise<void> {
+    const { id } = await this.bridge.upsertCard({
+      id: cardId,
+      managed: note.managed,
+      group: this.settings.syncAllContacts ? null : this.settings.sourceGroupName,
+      noteBlock: macNoteBlock(vaultName, note.obsidianUid)
+    });
+    await this.notes.writeSyncState(file, {
+      macContactId: id,
+      managedHash: hashManaged(note.managed),
+      syncedAt: new Date().toISOString(),
+      status: 'in-sync'
+    });
   }
 }
