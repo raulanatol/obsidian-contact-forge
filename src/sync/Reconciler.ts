@@ -57,15 +57,48 @@ export function reconcile(input: ReconcileInput): SyncPlan {
   const toCreate: ContactNote[] = [];
   const toUpdate: { note: ContactNote; card: MacCard }[] = [];
 
+  // Two notes claiming the same obsidian_uid (e.g. a duplicated file) would both
+  // match — and alternately overwrite — the same card. Refuse to sync any of them.
+  const uidCount = new Map<string, number>();
+  for (const n of notes) uidCount.set(n.obsidianUid, (uidCount.get(n.obsidianUid) ?? 0) + 1);
+
+  const strongMatch = (note: ContactNote): MacCard | null =>
+    // 1) strong match by cf-uid marker, 2) fallback: cached mac_contact_id
+    cardsByUid.get(note.obsidianUid) ?? (note.macContactId ? (cardsById.get(note.macContactId) ?? null) : null);
+
+  // Opted-out notes still own their card: claim it first so it is never offered
+  // as an orphan (adopting it would create a second note for the same person).
+  for (const note of notes) {
+    if (note.syncEnabled) continue;
+    const card = strongMatch(note);
+    if (card) matchedCardIds.add(card.id);
+  }
+
   for (const note of notes) {
     if (!note.syncEnabled) continue; // per-note opt-out
 
-    // 1) strong match by cf-uid marker
-    let card = cardsByUid.get(note.obsidianUid) ?? null;
-    // 2) fallback: cached mac_contact_id
-    if (!card && note.macContactId) {
-      card = cardsById.get(note.macContactId) ?? null;
+    if ((uidCount.get(note.obsidianUid) ?? 0) > 1) {
+      const card = strongMatch(note);
+      if (card) matchedCardIds.add(card.id);
+      buckets.push({
+        kind: 'error',
+        note,
+        message: `Duplicate obsidian_uid ${note.obsidianUid} shared by several notes — give each note its own UID.`
+      });
+      continue;
     }
+
+    const card = strongMatch(note);
+    if (card && matchedCardIds.has(card.id)) {
+      buckets.push({
+        kind: 'error',
+        note,
+        card,
+        message: `Card ${card.id} is already linked to another note.`
+      });
+      continue;
+    }
+
     // 3) weak heuristic: name + shared email (suggestion only)
     if (!card) {
       const cand = cards.find(
@@ -83,6 +116,19 @@ export function reconcile(input: ReconcileInput): SyncPlan {
     }
 
     if (!card) {
+      if (note.macContactId) {
+        // The note was linked to a card we can no longer see (deleted in Mac,
+        // removed from the source group, or the dump is incomplete). Creating a
+        // fresh card here is how duplicates happen — surface it instead.
+        buckets.push({
+          kind: 'error',
+          note,
+          message:
+            `Linked Mac card ${note.macContactId} was not found. If it was deleted on purpose, ` +
+            'clear mac_contact_id in the note to recreate it.'
+        });
+        continue;
+      }
       // note only -> create
       toCreate.push(note);
       buckets.push({ kind: 'dirty', note, card: null });
@@ -98,12 +144,15 @@ export function reconcile(input: ReconcileInput): SyncPlan {
 
     if (!noteChanged && cardMatchesLastWrite) {
       buckets.push({ kind: 'in-sync', note, card });
-    } else if (noteChanged) {
-      // Obsidian is source of truth: push regardless of card state.
+    } else if (noteChanged && (cardMatchesLastWrite || note.managedHash === null)) {
+      // Obsidian is source of truth and the card still holds what we last wrote
+      // (or we never wrote it): safe to push.
       toUpdate.push({ note, card });
       buckets.push({ kind: 'dirty', note, card });
     } else {
-      // note unchanged but card diverged -> edited in Mac
+      // Card diverged from the last write (edited in Mac / iPhone). Even if the
+      // note changed too, never overwrite silently: the user decides via the
+      // report's overwrite/pull actions.
       buckets.push({ kind: 'edited-in-mac', note, card });
     }
   }

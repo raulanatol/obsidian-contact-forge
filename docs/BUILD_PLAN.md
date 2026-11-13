@@ -229,9 +229,26 @@ The `bulk-adopt-orphans` command (`src/main.ts`) is the one exception to "adopt 
 always per-row": it runs a dry-run sync to collect every `orphan-mac` bucket card,
 shows a `BulkAdoptModal` summarizing the count, and on confirm calls
 `Actions.bulkAdopt(cards)`, which loops `Actions.adoptCard()` (the same logic `adopt()`
-uses) and collects per-card errors instead of aborting the batch. Intended as a
+uses) and collects per-card errors instead of aborting the batch. It is a strictly
 one-time initial-import path — most useful together with `syncAllContacts` — not a
 replacement for the per-row report workflow, which still exists for everyday orphans.
+
+- After a run with at least one adopted card and zero errors, `initialImportDone` is
+  persisted in settings and the command refuses to run again.
+- A run with errors does not lock: re-running only picks up cards that are still
+  orphans, so it resumes without duplicating.
+- `adoptCard` writes `mac_contact_id` into the new note *before* stamping the marker,
+  so a failed stamp still leaves the note linked by id (the next sync heals the marker).
+
+### 6.2 Duplicate-prevention invariants
+
+- If the Contacts dump fails, the sync aborts before reconciling — never reconcile
+  against an empty card list.
+- A note with `mac_contact_id` whose card is not found is an `error`, never a create.
+- Notes sharing an `obsidian_uid`, or two notes resolving to the same card, are `error`s.
+- Opted-out notes (`cf_sync: false`) still claim their card so it is not an orphan.
+- If both the note and the card changed since the last write, the pair goes to
+  `edited-in-mac` (user decides) instead of being overwritten silently.
 
 ---
 

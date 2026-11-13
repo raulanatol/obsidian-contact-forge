@@ -79,6 +79,7 @@ export interface ContactForgeSettings {
   dryRun: boolean;
   confirmBeforeWrite: boolean;
   debug: boolean;
+  initialImportDone: boolean; // the one-time Mac -> Obsidian import completed without errors
 }
 
 export const DEFAULT_SETTINGS: ContactForgeSettings = {
@@ -97,5 +98,6 @@ export const DEFAULT_SETTINGS: ContactForgeSettings = {
   },
   dryRun: false,
   confirmBeforeWrite: true,
-  debug: false
+  debug: false,
+  initialImportDone: false
 };

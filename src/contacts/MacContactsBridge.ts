@@ -19,7 +19,8 @@ interface ExecFileError extends Error {
 
 function execFileAsync(command: string, args: string[]): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    execFile(command, args, (error, stdout, stderr) => {
+    // Default maxBuffer is 1 MB; a full Contacts.app dump easily exceeds it.
+    execFile(command, args, { maxBuffer: 256 * 1024 * 1024 }, (error, stdout, stderr) => {
       if (error) {
         reject(Object.assign(error, { stdout, stderr }) as ExecFileError);
         return;
