@@ -237,7 +237,7 @@ replacement for the per-row report workflow, which still exists for everyday orp
   persisted in settings and the command refuses to run again.
 - A run with errors does not lock: re-running only picks up cards that are still
   orphans, so it resumes without duplicating.
-- `adoptCard` writes `mac_contact_id` into the new note *before* stamping the marker,
+- `adoptCard` writes `mac_contact_id` into the new note _before_ stamping the marker,
   so a failed stamp still leaves the note linked by id (the next sync heals the marker).
 
 ### 6.2 Duplicate-prevention invariants
