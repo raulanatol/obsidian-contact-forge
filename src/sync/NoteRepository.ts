@@ -72,7 +72,10 @@ export class NoteRepository {
     });
   }
 
-  async createFromTemplate(managed?: Partial<ManagedFields>): Promise<{ file: TFile; uid: string }> {
+  async createFromTemplate(
+    managed?: Partial<ManagedFields>,
+    macContactId: string | null = null
+  ): Promise<{ file: TFile; uid: string }> {
     const uid = newUuid();
     const managedFields: ManagedFields = {
       firstName: managed?.firstName ?? '',
@@ -84,7 +87,7 @@ export class NoteRepository {
     };
     const fm = {
       obsidian_uid: uid,
-      mac_contact_id: null,
+      mac_contact_id: macContactId,
       first_name: managedFields.firstName,
       last_name: managedFields.lastName,
       org: managedFields.org,

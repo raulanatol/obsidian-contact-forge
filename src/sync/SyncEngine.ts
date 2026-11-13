@@ -3,7 +3,7 @@ import { App, TFile } from 'obsidian';
 import { MacContactsBridge } from '../contacts/MacContactsBridge';
 import { hashManaged } from '../core/hash';
 import { log } from '../core/log';
-import type { ContactForgeSettings, ContactNote, SyncPlan } from '../core/types';
+import type { ContactForgeSettings, ContactNote, MacCard, SyncPlan } from '../core/types';
 import { macNoteBlock } from '../core/uid';
 import { ConfirmModal } from '../ui/ConfirmModal';
 
@@ -36,23 +36,31 @@ export class SyncEngine {
     const files = await this.notes.listContactFiles();
     const byPath = new Map(files.map(f => [f.path, f]));
     const notes: ContactNote[] = [];
+    const parseErrors: string[] = [];
     for (const file of files) {
       try {
         notes.push(await this.notes.parse(file));
       } catch (e) {
         log.error(`Failed to parse contact note ${file.path}`, e);
+        parseErrors.push((e as Error).message);
       }
     }
 
-    let cards = [] as Awaited<ReturnType<MacContactsBridge['dumpGroup']>>;
+    // If Contacts can't be read, abort: reconciling against an empty card list
+    // would turn every note into a "create" and duplicate the whole address book.
+    let cards: MacCard[];
     try {
       cards = await this.bridge.dumpGroup(this.settings.syncAllContacts ? null : this.settings.sourceGroupName);
     } catch (e) {
-      log.error('Failed to read Mac Contacts group', e);
-      log.notice((e as Error).message);
+      log.error('Failed to read Mac Contacts', e);
+      throw new Error(`Sync aborted, nothing was written: could not read Contacts.app. ${(e as Error).message}`);
     }
 
     const plan = reconcile({ notes, cards });
+    for (const message of parseErrors) {
+      plan.buckets.push({ kind: 'error', message });
+      plan.counts.error = (plan.counts.error ?? 0) + 1;
+    }
     const hasWrites = plan.toCreate.length > 0 || plan.toUpdate.length > 0;
 
     if (this.settings.confirmBeforeWrite && !dryRun && hasWrites) {

@@ -61,7 +61,10 @@ export class Actions {
   private async adoptCard(card: MacCard): Promise<TFile> {
     const managed = managedFromCard(card);
 
-    const { file, uid } = await this.notes.createFromTemplate(managed);
+    // Link the card id in the note BEFORE touching the Mac: if stamping fails, the
+    // next sync still matches this note to its card by id (and heals the marker)
+    // instead of treating the note as new and creating a duplicate card.
+    const { file, uid } = await this.notes.createFromTemplate(managed, card.id);
     const vaultName = this.settings.deepLinkVaultName ?? this.app.vault.getName();
     await this.bridge.stampMarker(card.id, uid, macNoteBlock(vaultName, uid));
 

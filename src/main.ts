@@ -52,9 +52,17 @@ export default class ContactForgePlugin extends Plugin {
 
     this.addCommand({
       id: 'bulk-adopt-orphans',
-      name: 'Bulk adopt all orphan contacts into Obsidian',
+      name: 'Import all contacts from Mac into Obsidian (one-time)',
       callback: () =>
         this.safeRun(async () => {
+          // The bulk import is a one-time bootstrap. Afterwards Obsidian is the
+          // source of truth; single orphans can still be adopted from the report.
+          if (this.settings.initialImportDone) {
+            log.notice(
+              'The initial import has already been done. Adopt individual Mac contacts from the sync report instead.'
+            );
+            return;
+          }
           const plan = await this.engine.run({ dryRun: true });
           const orphanCards = plan.buckets
             .filter((b): b is Extract<Bucket, { kind: 'orphan-mac' }> => b.kind === 'orphan-mac')
@@ -69,9 +77,15 @@ export default class ContactForgePlugin extends Plugin {
           if (!confirmed) return;
 
           const { adopted, errors } = await this.actions.bulkAdopt(orphanCards);
+          // Only lock after a clean run; a partial failure can be resumed (re-running
+          // only picks up the contacts that are still orphans, so nothing is duplicated).
+          if (errors.length === 0 && adopted > 0) {
+            this.settings.initialImportDone = true;
+            await this.persist();
+          }
           log.notice(
             `Adopted ${adopted} contact${adopted === 1 ? '' : 's'}` +
-              (errors.length ? `, ${errors.length} failed` : '') +
+              (errors.length ? `, ${errors.length} failed — run the import again to retry them` : '') +
               '. Run a sync to refresh the report.'
           );
           errors.forEach(({ card, message }) => log.error(`bulk-adopt-orphans: ${fullName(card)}`, message));
