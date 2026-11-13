@@ -29,8 +29,8 @@ Prior art reviewed:
 
 ### Design decisions
 
-- **Trigger:** manual only — a command in the command palette. No file-save hook, no
-  background timer in v1.
+- **Trigger:** a manual command (full reconcile) plus opt-in auto-sync on edit that
+  pushes only the edited note (§6.4). No background timer.
 - **Managed fields (push-only, Obsidian overwrites Mac):** name (first/last), emails,
   phones, organization, note/notes. These are fully owned by Obsidian.
 - **Orphan handling** (card exists in Mac's synced set but has no matching Obsidian
@@ -240,7 +240,7 @@ replacement for the per-row report workflow, which still exists for everyday orp
 - `adoptCard` writes `mac_contact_id` into the new note _before_ stamping the marker,
   so a failed stamp still leaves the note linked by id (the next sync heals the marker).
 
-### 6.2 Duplicate-prevention invariants
+### 6.3 Duplicate-prevention invariants
 
 - If the Contacts dump fails, the sync aborts before reconciling — never reconcile
   against an empty card list.
@@ -249,6 +249,35 @@ replacement for the per-row report workflow, which still exists for everyday orp
 - Opted-out notes (`cf_sync: false`) still claim their card so it is not an orphan.
 - If both the note and the card changed since the last write, the pair goes to
   `edited-in-mac` (user decides) instead of being overwritten silently.
+
+### 6.4 Auto-sync on edit
+
+Opt-in (`autoSync`, default `false`; meant to be enabled after the initial import).
+`src/sync/AutoSync.ts` listens to `metadataCache.on('changed')` for notes in the
+contacts folder, debounces ~3 s per note, and pushes through a serial queue.
+
+- `autoSyncPolicy.preflight()` (pure) gates every edit locally before any osascript
+  call: opted-out → skip; linked and managed hash unchanged → skip (this also stops
+  the feedback loop from our own sync-state writes); unlinked and not `isPushable`
+  (needs a name and an email or phone) → skip.
+- Otherwise `getCard.js` reads only the linked card, and `autoSyncPolicy.decide()` runs
+  `reconcile()` on that note + card + colliding notes (same uid, same card id, or the
+  card's marker owner), so the §6.3 invariants apply unchanged.
+- `dirty` → push without confirmation (still honors `dryRun`); `edited-in-mac` and
+  `error` → Notice only, nothing is written (no frontmatter write either, to avoid loops).
+- Every command and report action runs inside `AutoSync.pause()`: it waits for the
+  in-flight push, and edits seen meanwhile are deferred and replayed afterwards.
+- Unlinked new notes can't use the name+email heuristic (no full dump), so a note
+  created for a person who also exists only in Contacts will create a second card.
+
+### 6.5 Label mapping
+
+Contacts exposes built-in labels to JXA in raw CNLabel form (`_$!<Mobile>!$_`,
+`iPhone`); a plain `mobile` creates a custom label. `src/core/labels.ts#toMacLabel`
+maps note labels to the system form before `upsertCard`; reading back via
+`fromMacLabel` yields the same lowercase label, so hashes stay stable. `upsertCard`
+updates emails/phones by diff: entries whose value is unchanged are kept (label fixed
+only if it differs), others deleted, new ones appended.
 
 ---
 
@@ -270,7 +299,9 @@ replacement for the per-row report workflow, which still exists for everyday orp
 - `dryRun` (default `false`) — compute the report and intended writes but perform no
   Mac writes. Strongly recommend defaulting new users to try dry-run first.
 - `confirmBeforeWrite` (default `true`) — show a modal summarizing planned changes
-  before touching Contacts.
+  before a manual sync touches Contacts. Auto-sync never prompts.
+- `autoSync` (default `false`) — push a contact note shortly after it is edited (§6.4).
+- `initialImportDone` (internal) — set after a clean one-time import (§6.1).
 
 ---
 
@@ -282,6 +313,8 @@ replacement for the per-row report workflow, which still exists for everyday orp
 - **Contact Forge: Create contact note from template** (scaffolds a new CN with a
   fresh UUID and empty managed fields).
 - **Contact Forge: Open sync report.**
+- **Contact Forge: Import all contacts from Mac into Obsidian (one-time)** (§6.1).
+- **Contact Forge: Sanitize contact note filenames.**
 
 ---
 
@@ -296,24 +329,29 @@ src/
                               #   Settings, ReportModel.
     hash.ts                   # canonicalize(managed) + fnv1a(json) => stable hash.
     uid.ts                    # newUuid(), deepLink(vault, uid), markerLine(uid).
+    labels.ts                 # note label <-> Contacts system label mapping.
     log.ts                    # thin Notice + console logger with levels.
   contacts/
     MacContactsBridge.ts      # dumpGroup/upsertCard/stampMarker via osascript.
     jxa/
       dumpGroup.js            # JXA source (string import or raw .js loaded at build).
       upsertCard.js
+      getCard.js              # single card by id (auto-sync).
       stampMarker.js
     permissions.ts            # detect TCC errors, human-readable guidance.
   sync/
     NoteRepository.ts         # read/parse/write contact notes via processFrontMatter.
     Reconciler.ts             # the Phase-4 engine: match -> bucketize -> plan.
     SyncEngine.ts             # orchestrates: read notes + cards, reconcile, apply
-                              #   plan (respecting dryRun/confirm), write report.
+                              #   plan (respecting dryRun/confirm), write report;
+                              #   syncNote() for single-note auto-sync.
+    AutoSync.ts               # debounce + serial queue + pause around commands.
+    autoSyncPolicy.ts         # pure preflight/decide for single-note pushes.
     ReportWriter.ts           # renders ReportModel to markdown with action links.
     actions.ts                # adopt / bulkAdopt / markForDeletion / overwrite / pull / confirm.
   ui/
     ConfirmModal.ts           # pre-write summary modal.
-    BulkAdoptModal.ts         # confirmation for the bulk-adopt-orphans command.
+    BulkAdoptModal.ts         # confirmation for the one-time import command.
     reportPostProcessor.ts    # optional: render action links as buttons.
   settings/
     Settings.ts               # defaults + load/save.
@@ -354,6 +392,6 @@ src/
 
 ## 12. Explicit non-goals for v1
 
-- No automatic/scheduled sync.
+- No scheduled/background sync (auto-sync only reacts to edits of a contact note).
 - No iOS support (runtime is macOS-only; iOS benefits indirectly via iCloud).
 - No conflict auto-merge — conflicts always go to the report for a human decision.

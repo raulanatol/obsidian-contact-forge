@@ -5,8 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 An Obsidian plugin (macOS-only, `isDesktopOnly: true`) where Obsidian is the source of
-truth for contacts, with a manual, one-way sync to macOS Contacts.app via JXA
-(`osascript -l JavaScript`). It is the inverse of `raulanatol/obsidian-mac-sync-contacts`
+truth for contacts, with a one-way sync to macOS Contacts.app via JXA
+(`osascript -l JavaScript`): a manual full reconcile, plus opt-in auto-sync of single
+notes on edit. It is the inverse of `raulanatol/obsidian-mac-sync-contacts`
 (which pulls Mac → Obsidian).
 
 **`docs/BUILD_PLAN.md` is the authoritative spec.** It contains the full data model,
