@@ -110,7 +110,10 @@ export class SyncEngine {
     const pre = preflight(note);
     if (pre.action === 'skip') return { status: 'skipped' };
 
-    const card = pre.action === 'fetch-card' ? await this.bridge.getCard(pre.cardId) : null;
+    const card =
+      pre.action === 'fetch-card'
+        ? await this.bridge.getCard(pre.cardId, this.settings.syncAllContacts ? null : this.settings.sourceGroupName)
+        : null;
     const related = await this.notes.findRelated(note, card?.cfUid ?? null);
     const decision = decide(note, related, card);
 

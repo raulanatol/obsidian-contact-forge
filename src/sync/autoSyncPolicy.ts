@@ -50,6 +50,15 @@ export type Decision =
  * @param card    the note's linked card, freshly read, or null
  */
 export function decide(note: ContactNote, related: ContactNote[], card: MacCard | null): Decision {
+  // First link to an existing card (never synced, card not stamped for this note):
+  // a hand-edited or copied mac_contact_id could point at any contact. Auto-sync
+  // won't overwrite it unattended; a manual sync (with confirmation) must do it.
+  if (note.managedHash === null && card && card.cfUid !== note.obsidianUid) {
+    return {
+      action: 'error',
+      message: `Card ${card.id} has never been synced with this note — run "Sync contacts to Mac" to link it.`
+    };
+  }
   const plan = reconcile({ notes: [note, ...related], cards: card ? [card] : [] });
   const bucket = plan.buckets.find(b => 'note' in b && b.note === note);
   switch (bucket?.kind) {

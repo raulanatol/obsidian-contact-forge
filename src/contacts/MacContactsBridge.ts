@@ -83,9 +83,12 @@ export class MacContactsBridge {
     return out as { id: string };
   }
 
-  /** Read one card by id; null when it no longer exists. */
-  async getCard(id: string): Promise<MacCard | null> {
-    const out = await this.run(getCardSrc, { id });
+  /**
+   * Read one card by id; null when it doesn't exist or, with `groupName` set, is
+   * outside that group (same scope as dumpGroup). Pass null for syncAllContacts.
+   */
+  async getCard(id: string, groupName: string | null): Promise<MacCard | null> {
+    const out = await this.run(getCardSrc, { id, group: groupName });
     return (out as MacCard | null) ?? null;
   }
 

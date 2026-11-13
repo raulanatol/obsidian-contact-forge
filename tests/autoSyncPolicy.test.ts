@@ -100,4 +100,14 @@ describe('decide', () => {
     const copy = { ...edited(), path: 'Contacts/ana-2.md' };
     expect(decide(edited(), [copy], card()).action).toBe('error');
   });
+
+  it('refuses to overwrite an existing card on first link without a matching marker', () => {
+    const n = note({ managedHash: null, managed: managed({ org: 'New' }) });
+    expect(decide(n, [], card({ cfUid: null, note: '' })).action).toBe('error');
+  });
+
+  it('still heals a half-finished adopt when the card carries this note’s marker', () => {
+    const n = note({ managedHash: null });
+    expect(decide(n, [], card())).toEqual({ action: 'push', cardId: 'card-ana' });
+  });
 });

@@ -260,11 +260,15 @@ contacts folder, debounces ~3 s per note, and pushes through a serial queue.
   call: opted-out → skip; linked and managed hash unchanged → skip (this also stops
   the feedback loop from our own sync-state writes); unlinked and not `isPushable`
   (needs a name and an email or phone) → skip.
-- Otherwise `getCard.js` reads only the linked card, and `autoSyncPolicy.decide()` runs
+- Otherwise `getCard.js` reads only the linked card — scoped like a full sync: a card
+  outside the source group (when `syncAllContacts` is off) reads as not found, and `autoSyncPolicy.decide()` runs
   `reconcile()` on that note + card + colliding notes (same uid, same card id, or the
   card's marker owner), so the §6.3 invariants apply unchanged.
 - `dirty` → push without confirmation (still honors `dryRun`); `edited-in-mac` and
   `error` → Notice only, nothing is written (no frontmatter write either, to avoid loops).
+- A never-synced note (`cf_managed_hash` null) is not auto-pushed onto an existing card
+  unless the card carries that note's `cf-uid` marker; that first link needs a manual
+  sync with confirmation.
 - Every command and report action runs inside `AutoSync.pause()`: it waits for the
   in-flight push, and edits seen meanwhile are deferred and replayed afterwards.
 - Unlinked new notes can't use the name+email heuristic (no full dump), so a note
