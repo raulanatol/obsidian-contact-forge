@@ -89,6 +89,17 @@ export function reconcile(input: ReconcileInput): SyncPlan {
     }
 
     const card = strongMatch(note);
+    // The cf-uid marker outranks a cached id: if this card is stamped for another
+    // note that exists, it belongs to that note regardless of processing order.
+    if (card && card.cfUid && card.cfUid !== note.obsidianUid && uidCount.has(card.cfUid)) {
+      buckets.push({
+        kind: 'error',
+        note,
+        card,
+        message: `Card ${card.id} is stamped for another note (cf-uid ${card.cfUid}); clear mac_contact_id here.`
+      });
+      continue;
+    }
     if (card && matchedCardIds.has(card.id)) {
       buckets.push({
         kind: 'error',

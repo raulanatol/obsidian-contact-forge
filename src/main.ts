@@ -7,6 +7,7 @@ import type { Bucket, ContactForgeSettings } from './core/types';
 import { loadSettings, saveSettings } from './settings/Settings';
 import { ContactForgeSettingTab } from './settings/SettingsTab';
 import { Actions } from './sync/actions';
+import { AutoSync } from './sync/AutoSync';
 import { NoteRepository } from './sync/NoteRepository';
 import { SyncEngine } from './sync/SyncEngine';
 import { BulkAdoptModal } from './ui/BulkAdoptModal';
@@ -17,6 +18,7 @@ export default class ContactForgePlugin extends Plugin {
   private engine!: SyncEngine;
   private bridge = new MacContactsBridge();
   private actions!: Actions;
+  private autoSync!: AutoSync;
 
   async onload(): Promise<void> {
     this.settings = await loadSettings(this);
@@ -24,6 +26,9 @@ export default class ContactForgePlugin extends Plugin {
 
     this.engine = new SyncEngine(this.app, this.settings);
     this.actions = new Actions(this.app, this.settings);
+    this.autoSync = new AutoSync(this, this.settings, this.engine);
+    // Start after the vault is indexed so startup indexing doesn't fire a burst.
+    this.app.workspace.onLayoutReady(() => this.autoSync.start());
 
     this.addSettingTab(new ContactForgeSettingTab(this.app, this));
     registerReportPostProcessor(this);
@@ -161,9 +166,11 @@ export default class ContactForgePlugin extends Plugin {
     await saveSettings(this, this.settings);
   }
 
+  // Every command and report action runs with auto-sync paused, so the plugin's own
+  // writes (sync state, adopted notes) aren't pushed back while the command runs.
   private async safeRun(fn: () => Promise<unknown>): Promise<void> {
     try {
-      await fn();
+      await this.autoSync.pause(fn);
     } catch (e) {
       log.error('command failed', e);
       log.notice((e as Error).message);

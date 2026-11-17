@@ -77,7 +77,8 @@ export interface ContactForgeSettings {
     contactNote: boolean;
   };
   dryRun: boolean;
-  confirmBeforeWrite: boolean;
+  confirmBeforeWrite: boolean; // manual sync only; auto-sync never prompts
+  autoSync: boolean; // push a contact note to Contacts.app shortly after it is edited
   debug: boolean;
   initialImportDone: boolean; // the one-time Mac -> Obsidian import completed without errors
 }
@@ -98,6 +99,7 @@ export const DEFAULT_SETTINGS: ContactForgeSettings = {
   },
   dryRun: false,
   confirmBeforeWrite: true,
+  autoSync: false,
   debug: false,
   initialImportDone: false
 };

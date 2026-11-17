@@ -55,6 +55,25 @@ export class NoteRepository {
     });
   }
 
+  /**
+   * Other contact notes that could collide with `note`: same obsidian_uid (a
+   * duplicated file), same mac_contact_id, or owning the card's cf-uid marker.
+   * Reads only the metadata cache, so it is cheap enough to run on every edit.
+   */
+  async findRelated(note: ContactNote, cardCfUid: string | null): Promise<ContactNote[]> {
+    const uids = new Set([note.obsidianUid, ...(cardCfUid ? [cardCfUid] : [])]);
+    const out: ContactNote[] = [];
+    for (const file of await this.listContactFiles()) {
+      if (file.path === note.path) continue;
+      const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+      if (!fm?.obsidian_uid) continue;
+      const sameUid = uids.has(String(fm.obsidian_uid));
+      const sameCard = note.macContactId !== null && fm.mac_contact_id === note.macContactId;
+      if (sameUid || sameCard) out.push(await this.parse(file));
+    }
+    return out;
+  }
+
   async writeSyncState(
     file: TFile,
     state: {

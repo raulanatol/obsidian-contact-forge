@@ -169,3 +169,26 @@ describe('reconcile', () => {
     expect(plan.toCreate).toHaveLength(0);
   });
 });
+
+describe('reconcile — marker precedence', () => {
+  it('cf-uid marker wins over another note’s cached id, regardless of order', () => {
+    const owner = note({ path: 'owner.md', obsidianUid: 'uid-john' });
+    const stale = note({
+      path: 'stale.md',
+      obsidianUid: 'uid-stale',
+      macContactId: 'card-1',
+      managed: managed({ org: 'Changed' }),
+      managedHash: '00000000'
+    });
+    const c = card({ cfUid: 'uid-john' });
+    for (const notes of [
+      [stale, owner],
+      [owner, stale]
+    ]) {
+      const plan = reconcile({ notes, cards: [c] });
+      expect(plan.toUpdate).toHaveLength(0);
+      expect(plan.counts['in-sync']).toBe(1);
+      expect(plan.counts['error']).toBe(1);
+    }
+  });
+});

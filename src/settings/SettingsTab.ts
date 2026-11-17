@@ -90,12 +90,31 @@ export class ContactForgeSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl).setName('Confirm before writing').addToggle(tg =>
-      tg.setValue(s.confirmBeforeWrite).onChange(async v => {
-        s.confirmBeforeWrite = v;
-        await this.plugin.persist();
-      })
-    );
+    new Setting(containerEl)
+      .setName('Sync automatically on edit')
+      .setDesc(
+        'Push a contact note to Contacts.app a few seconds after you edit it. Only that ' +
+          'contact is read and written, without confirmation. New notes are created in ' +
+          'Contacts once they have a name and an email or phone. If the contact was also ' +
+          'edited in Contacts, nothing is overwritten and you get a notice instead. ' +
+          'Recommended: turn this on after the initial import.'
+      )
+      .addToggle(tg =>
+        tg.setValue(s.autoSync).onChange(async v => {
+          s.autoSync = v;
+          await this.plugin.persist();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName('Confirm before writing')
+      .setDesc('Show a summary before a manual sync writes to Contacts. Auto-sync never asks.')
+      .addToggle(tg =>
+        tg.setValue(s.confirmBeforeWrite).onChange(async v => {
+          s.confirmBeforeWrite = v;
+          await this.plugin.persist();
+        })
+      );
 
     new Setting(containerEl).setName('Debug logging').addToggle(tg =>
       tg.setValue(s.debug).onChange(async v => {

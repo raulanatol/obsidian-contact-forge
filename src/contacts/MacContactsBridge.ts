@@ -4,10 +4,12 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 
+import { toMacLabel } from '../core/labels';
 import type { LabeledValue, MacCard, ManagedFields } from '../core/types';
 
 // JXA sources are bundled as text (esbuild loader ".js" -> "text").
 import dumpGroupSrc from './jxa/dumpGroup.js';
+import getCardSrc from './jxa/getCard.js';
 import stampMarkerSrc from './jxa/stampMarker.js';
 import upsertCardSrc from './jxa/upsertCard.js';
 import { classifyOsascriptError } from './permissions';
@@ -72,8 +74,22 @@ export class MacContactsBridge {
     group: string | null; // null => don't join any group (syncAllContacts mode)
     noteBlock: string; // deep link + marker to append/replace
   }): Promise<{ id: string }> {
-    const out = await this.run(upsertCardSrc, card);
+    const toMac = (list: LabeledValue[]) => list.map(lv => ({ label: toMacLabel(lv.label), value: lv.value }));
+    const payload = {
+      ...card,
+      managed: { ...card.managed, emails: toMac(card.managed.emails), phones: toMac(card.managed.phones) }
+    };
+    const out = await this.run(upsertCardSrc, payload);
     return out as { id: string };
+  }
+
+  /**
+   * Read one card by id; null when it doesn't exist or, with `groupName` set, is
+   * outside that group (same scope as dumpGroup). Pass null for syncAllContacts.
+   */
+  async getCard(id: string, groupName: string | null): Promise<MacCard | null> {
+    const out = await this.run(getCardSrc, { id, group: groupName });
+    return (out as MacCard | null) ?? null;
   }
 
   async stampMarker(id: string, uid: string, noteBlock: string): Promise<void> {
